@@ -1,6 +1,6 @@
 // Service worker: działa offline i po cichu odświeża pliki w tle.
 // Przy każdej zmianie aplikacji podbij numer wersji poniżej.
-var CACHE = "kalkulator-v11";
+var CACHE = "kalkulator-v13";
 var FILES = [
   "./",
   "index.html",
