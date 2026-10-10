@@ -95,10 +95,35 @@
   .toast { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translate(-50%,20px); background:var(--card2); color:var(--txt);
            padding:10px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; z-index:60; box-shadow:0 4px 20px rgba(0,0,0,.35); }
   .toast.show { opacity:1; transform:translate(-50%,0); }
-  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-  .tile { border:0; border-radius:16px; background:var(--card); color:var(--txt); padding:14px 12px; text-align:left; display:flex; flex-direction:column; gap:4px; }
-  .tile:active, .ditem:active { background:var(--card2); }
-  .tile .ic { font-size:24px; }
+  .hero { position:relative; overflow:hidden; border-radius:22px; padding:18px; margin-bottom:6px; border:1px solid var(--line);
+          background:radial-gradient(120% 90% at 100% 0%, var(--accsoft), transparent 65%), var(--card); }
+  .hero-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .greet { color:var(--mut); font-size:14px; }
+  .hwd { font-size:20px; font-weight:600; text-transform:capitalize; }
+  .ring { position:relative; width:64px; height:64px; flex:none; }
+  .ring svg { width:100%; height:100%; display:block; }
+  .ring circle { fill:none; stroke-width:7; }
+  .ring .rb { stroke:var(--card2); }
+  .ring .rf { stroke:var(--acc); stroke-linecap:round; }
+  .ring span { position:absolute; inset:0; display:grid; place-items:center; font-size:13px; font-weight:600; }
+  .hday { display:flex; align-items:baseline; gap:10px; margin:2px 0 14px; flex-wrap:wrap; }
+  .hday b { font-size:68px; line-height:1; font-weight:700; letter-spacing:-.03em; color:var(--acc); }
+  .hday span { font-size:19px; font-weight:500; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .stats div { background:var(--card2); border-radius:14px; padding:10px 8px; text-align:center; }
+  .stats b { display:block; font-size:20px; font-weight:600; }
+  .stats span { color:var(--mut); font-size:12px; }
+  .soon { display:flex; gap:10px; overflow-x:auto; margin:0 -12px; padding:2px 12px 6px; scroll-snap-type:x proximity; scrollbar-width:none; }
+  .soon::-webkit-scrollbar { display:none; }
+  .soonc { flex:none; width:138px; scroll-snap-align:start; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px; display:flex; flex-direction:column; gap:2px; }
+  .soonc .si { font-size:20px; }
+  .soonc b { font-size:30px; line-height:1.15; font-weight:700; color:var(--acc); }
+  .soonc .sl { font-size:13px; line-height:1.25; overflow-wrap:anywhere; }
+  .soonc .sd { color:var(--mut); font-size:12px; margin-top:2px; }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+  .tile { border:1px solid transparent; border-radius:18px; background:var(--card); color:var(--txt); padding:12px; text-align:left; display:flex; flex-direction:column; gap:3px; transition:transform .12s, border-color .12s; }
+  .tile:active { transform:scale(.97); border-color:var(--acc); }
+  .tile .ic { width:40px; height:40px; border-radius:12px; background:var(--accsoft); display:grid; place-items:center; font-size:21px; margin-bottom:6px; }
   .tile b { font-size:15px; font-weight:600; }
   .tile small { color:var(--mut); font-size:12px; line-height:1.3; }
   .bar { height:8px; border-radius:99px; background:var(--card2); overflow:hidden; margin:12px 0 6px; }
@@ -116,18 +141,79 @@
   .cdrow .days small { display:block; font-weight:400; color:var(--mut); font-size:12px; }
   .xbtn { flex:none; width:40px; height:40px; border:0; border-radius:10px; background:var(--card2); color:var(--txt); font-size:22px; }
   details .kv:first-of-type { border-top:1px solid var(--line); }
+  .soonc { text-align:left; color:var(--txt); font:inherit; }
+  .soonc:active { border-color:var(--acc); }
+  .clk { color:var(--mut); font-variant-numeric:tabular-nums; font-size:14px; margin-top:2px; }
+  .cal { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:12px; margin:12px 0 6px; }
+  .calh { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .calnav { width:40px; height:40px; border:0; border-radius:12px; background:var(--card2); color:var(--txt); font-size:22px; }
+  .calt { border:0; background:transparent; color:var(--txt); font-size:17px; font-weight:600; text-transform:capitalize; padding:8px 12px; border-radius:10px; }
+  .calg { display:grid; grid-template-columns:22px repeat(7,1fr); gap:4px 2px; text-align:center; }
+  .cl { color:var(--mut); font-size:12px; padding:2px 0; }
+  .cw { color:var(--mut); font-size:11px; align-self:center; opacity:.7; }
+  .dy { position:relative; justify-self:center; width:100%; max-width:42px; aspect-ratio:1; border:0; border-radius:50%; background:transparent; color:var(--txt); font-size:15px; padding:0; }
+  .dy.we { color:var(--acc); }
+  .dy.today { background:var(--acc); color:var(--onacc); font-weight:700; }
+  .dy.sel:not(.today) { box-shadow:inset 0 0 0 2px var(--acc); }
+  .dy.hol::after { content:""; position:absolute; bottom:4px; left:50%; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:var(--acc); }
+  .dy.today.hol::after { background:var(--onacc); }
+  .caldet { margin-top:10px; padding:10px 12px; border-radius:14px; background:var(--card2); display:flex; flex-direction:column; gap:2px; }
+  .caldet span { color:var(--mut); font-size:13px; }
+  .calf { color:var(--mut); font-size:13px; margin:10px 2px 0; }
+  .calf b { color:var(--txt); }
+  @keyframes rise { from { opacity:0; transform:translateY(10px); } }
+  @keyframes ringin { from { stroke-dasharray:0 189; } }
+  .rise { animation:rise .45s ease both; }
+  .tiles.rise { animation-delay:.1s; }
+  .soon.rise { animation-delay:.06s; }
+  .rise .rf { animation:ringin .9s ease .2s both; }
+  @media (prefers-reduced-motion: reduce) { .rise, .rise .rf { animation:none; } }
+  /* ujednolicony wygląd zakładek (jak ekran Start) */
+  .card { border:1px solid var(--line); border-radius:20px; padding:16px; }
+  .burger { border:1px solid var(--line); }
+  .tico { flex:none; width:40px; height:40px; border-radius:12px; background:var(--accsoft); display:grid; place-items:center; font-size:21px; }
+  .top h1 { font-size:21px; font-weight:700; letter-spacing:-.01em; }
+  .res { border-radius:22px; padding:18px; background:radial-gradient(120% 90% at 100% 0%, var(--accsoft), transparent 65%), var(--card); }
+  .res .big { color:var(--acc); font-size:28px; font-weight:700; letter-spacing:-.01em; }
+  input[type=text], select { border-radius:12px; }
+  input[type=text]:focus, select:focus { box-shadow:0 0 0 3px var(--accsoft); }
+  .seg { border-radius:14px; padding:4px; }
+  .seg button { border-radius:11px; }
+  .chip { padding:8px 13px; border:1px solid transparent; }
+  .chip:active { border-color:var(--acc); color:var(--acc); }
+  .btn { border-radius:14px; }
+  .btn:active { opacity:.8; }
+  .ditem { padding:8px 10px; }
+  .ditem .ic { width:36px; height:36px; border-radius:11px; background:var(--card2); display:grid; place-items:center; font-size:18px; }
+  .ditem[aria-current=page] .ic { background:var(--accsoft); }
+  .dhead b { font-size:20px; }
+  /* ikony SVG */
+  .i { width:22px; height:22px; display:block; flex:none; }
+  .tile .ic, .tico { color:var(--acc); }
+  .tile .ic .i, .tico .i { width:22px; height:22px; }
+  .ditem .ic { color:var(--mut); }
+  .ditem .ic .i { width:20px; height:20px; }
+  .ditem[aria-current=page] .ic { color:var(--acc); }
+  .soonc .si { color:var(--acc); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn .i { width:18px; height:18px; }
+  .opts .btn { width:100%; }
+  .calnav { display:grid; place-items:center; padding:0; }
+  .calnav .i, .xbtn .i { width:20px; height:20px; margin:auto; }
+  .xbtn { display:grid; place-items:center; padding:0; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
     <button class="burger" id="burger" aria-label="Otwórz menu" aria-expanded="false"><i></i></button>
+    <span class="tico" id="tico" aria-hidden="true"></span>
     <h1 id="title">Kalkulator czasu</h1>
   </div>
   <p class="hint" id="hint"></p>
   <div id="view"></div>
   <div class="res" id="out" aria-live="polite"></div>
-  <div class="resbar" id="resbar" hidden><button class="btn" id="copy">📋 Kopiuj wynik</button></div>
+  <div class="resbar" id="resbar" hidden><button class="btn" id="copy"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>Kopiuj wynik</button></div>
   <p class="note" id="foot">Obliczenia kalendarzowe, bez uwzględniania zmiany czasu letni/zimowy. Święta według kalendarza polskiego.</p>
 </div>
 <div class="scrim" id="scrim"></div>
@@ -142,7 +228,7 @@
 (function () {
 'use strict';
 
-var APP_VERSION = '4';
+var APP_VERSION = '8';
 
 /* ---------- stałe i drobne pomocniki ---------- */
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
@@ -175,6 +261,8 @@ function msg(t) { return '<div class="msg">' + t + '</div>'; }
 function errm(t) { return '<div class="err">' + t + '</div>'; }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+var ICONS = {"home": "<path d=\"M3 11l9-8 9 8\"/><path d=\"M5 10v10h5v-6h4v6h5V10\"/>", "add": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5\"/>", "diff": "<path d=\"M4 8h16M16 4l4 4-4 4\"/><path d=\"M20 16H4M8 12l-4 4 4 4\"/>", "work": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"3\"/><path d=\"M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 13h18\"/>", "age": "<path d=\"M4 20h16v-7a2 2 0 00-2-2H6a2 2 0 00-2 2z\"/><path d=\"M4 16c2 1.5 3 1.5 4 0s2-1.5 4 0 3 1.5 4 0 2-1.5 4 0M12 11V8M12 6.5c-.8-.8-.8-1.6 0-2.5.8.9.8 1.7 0 2.5z\"/>", "special": "<path d=\"M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z\"/>", "info": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M8 3v4M16 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01\"/>", "find": "<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-4-4\"/>", "cd": "<path d=\"M6 3h12M6 21h12\"/><path d=\"M8 3c0 5 4 6 4 9s-4 4-4 9M16 3c0 5-4 6-4 9s4 4 4 9\"/>", "sum": "<circle cx=\"12\" cy=\"13\" r=\"8\"/><path d=\"M12 9v4l2.5 2M9.5 2h5\"/>", "pace": "<circle cx=\"6\" cy=\"17\" r=\"3.5\"/><circle cx=\"18\" cy=\"17\" r=\"3.5\"/><path d=\"M6 17l3.5-7h5.5l3 7M9.5 10L12 17M14 6h3\"/>", "conv": "<path d=\"M20 11a8 8 0 00-14-4L4 9M4 4v5h5\"/><path d=\"M4 13a8 8 0 0014 4l2-2M20 20v-5h-5\"/>", "settings": "<path d=\"M4 7h10M18 7h2M4 17h2M10 17h10\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"8\" cy=\"17\" r=\"2\"/>", "gift": "<rect x=\"3\" y=\"8\" width=\"18\" height=\"4\" rx=\"1\"/><path d=\"M12 8v13M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7M8 8a2.5 2.5 0 110-5c2 0 4 2.5 4 5 0-2.5 2-5 4-5a2.5 2.5 0 110 5\"/>", "ghost": "<path d=\"M5 21V11a7 7 0 0114 0v10l-3-2-2 2-2-2-2 2-2-2z\"/><path d=\"M9.5 11h.01M14.5 11h.01\"/>", "copy": "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M5 15V6a2 2 0 012-2h9\"/>", "swap": "<path d=\"M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4\"/>", "prev": "<path d=\"M15 5l-7 7 7 7\"/>", "next": "<path d=\"M9 5l7 7-7 7\"/>", "x": "<path d=\"M6 6l12 12M18 6L6 18\"/>"};
+function ico(n) { return '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || '') + '</svg>'; }
 
 /* ---------- daty (liczone w UTC jako „czas kalendarzowy”) ---------- */
 function utc(y, m, d, h, mi) {
@@ -435,7 +523,7 @@ function buildDiff(v, out) {
   var c = el('div', 'card');
   c.innerHTML = '<div class="opts">' + chkHtml('wt', 'Uwzględnij godziny') +
     '<div class="incl">' + chkHtml('inc', 'Wlicz dzień końcowy (np. 1–3 stycznia = 3 dni)') + '</div>' +
-    '<button class="btn swap">⇅ Zamień daty miejscami</button></div>';
+    '<button class="btn swap">' + ico('swap') + 'Zamień daty miejscami</button></div>';
   v.appendChild(c);
   var wt = $('.wt', c), inc = $('.inc', c);
   $('.swap', c).addEventListener('click', function () {
@@ -981,7 +1069,7 @@ function buildCountdown(v) {
       var yrs = it.x.r ? parts(it.ts).y - it.x.y : 0;
       return '<div class="cdrow"><div class="nm"><b>' + esc(it.x.n) + '</b><span>' + fmtDate(ts0(it)) + (yrs > 0 ? ' · ' + yrs + '. rocznica' : '') + '</span></div>' +
         '<div class="days' + (it.dd < 0 ? ' past' : '') + '">' + rel(it.ts) + (Math.abs(it.dd) >= 40 ? '<small>' + relLong(it.ts) + '</small>' : '') + '</div>' +
-        '<button class="xbtn" data-id="' + it.x.id + '" aria-label="Usuń">×</button></div>';
+        '<button class="xbtn" data-id="' + it.x.id + '" aria-label="Usuń">' + ico('x') + '</button></div>';
     }).join('');
   }
   function ts0(it) { return it.ts; }
@@ -1010,25 +1098,93 @@ function nextFri13(t0) {
   return null;
 }
 function buildHome(v) {
-  var box = el('div'); v.appendChild(box);
-  box.addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (b) show(b.dataset.go); });
-  function recalc() {
-    var t0 = todayTs(), p = parts(t0), tot = leap(p.y) ? 366 : 365, doy = dayOfYear(t0);
-    var nh = nextHoliday(t0), f13 = nextFri13(t0), cd = cdItems(cdLoad()).filter(function (i) { return i.dd >= 0; }).slice(0, 3);
-    var html = '<div class="res"><div class="big">' + fmtDate(t0) + '</div>' +
-      '<div class="sub">Tydzień ' + isoWeek(t0) + ' · dzień ' + doy + ' z ' + tot + '</div>' +
-      '<div class="bar"><i style="width:' + (doy / tot * 100).toFixed(1) + '%"></i></div>' +
-      '<div class="sub">Rok ' + p.y + ' minął w ' + nf(doy / tot * 100) + '%</div>' +
-      kv('Do końca roku', cnt(tot - doy, 'dzien'));
-    if (nh) html += kv('Najbliższe święto', nh.name + ' · ' + rel(nh.ts));
-    if (f13) html += kv('Najbliższy piątek 13.', fmtShort(f13) + ' · ' + rel(f13));
-    cd.forEach(function (i) { html += kv(esc(i.x.n), rel(i.ts)); });
-    html += '</div><div class="sub-h">Co chcesz policzyć?</div><div class="tiles">' +
-      modes.concat([settingsMode]).filter(function (m) { return m.id !== 'home'; }).map(function (m) {
-        return '<button class="tile" data-go="' + m.id + '"><span class="ic">' + m.icon + '</span><b>' + m.name + '</b><small>' + m.s + '</small></button>';
-      }).join('') + '</div>';
-    box.innerHTML = html;
+  var box = el('div'), top = el('div'), calBox = el('div'), rest = el('div');
+  box.appendChild(top); box.appendChild(calBox); box.appendChild(rest); v.appendChild(box);
+  var first = true, cy, cm, sel, dayKey = null, timer;
+  var LAB = ['pn', 'wt', 'śr', 'cz', 'pt', 'so', 'nd'];
+  function greet(h) { return h < 5 ? 'Dobranoc' : h < 12 ? 'Dzień dobry' : h < 18 ? 'Miłego dnia' : 'Dobry wieczór'; }
+  function clock() { var n = today(); return pad(n.h) + ':' + pad(n.mi); }
+  function soonCard(icon, label, ts, dd, go) {
+    return '<button class="soonc" data-go="' + go + '"><span class="si">' + ico(icon) + '</span><b>' + (dd === 0 ? 'dziś' : nf(dd)) + '</b><span class="sl">' +
+      (dd === 0 ? '' : pl(dd, ['dzień', 'dni', 'dni']) + ' · ') + label + '</span><span class="sd">' + fmtShort(ts) + '</span></button>';
   }
+  function resetCal() { var p = parts(todayTs()); cy = p.y; cm = p.m; sel = todayTs(); }
+
+  function calRender() {
+    var t0 = todayTs(), ft = utc(cy, cm, 1), off = mod(parts(ft).wd + 6, 7), n = dim(cy, cm), hm = holidays(cy).map;
+    var h = '<div class="cal"><div class="calh"><button class="calnav" data-nav="-1" aria-label="Poprzedni miesiąc">' + ico('prev') + '</button>' +
+      '<button class="calt" data-nav="0" aria-label="Wróć do dzisiaj">' + MONN[cm - 1] + ' ' + cy + '</button>' +
+      '<button class="calnav" data-nav="1" aria-label="Następny miesiąc">' + ico('next') + '</button></div><div class="calg"><span class="cw"></span>' +
+      LAB.map(function (l) { return '<span class="cl">' + l + '</span>'; }).join('');
+    var total = Math.ceil((off + n) / 7) * 7;
+    for (var i = 0; i < total; i++) {
+      var dn = i - off + 1;
+      if (i % 7 === 0) h += '<span class="cw">' + isoWeek(utc(cy, cm, Math.max(1, dn))) + '</span>';
+      if (dn < 1 || dn > n) { h += '<span></span>'; continue; }
+      var ts = utc(cy, cm, dn);
+      h += '<button class="dy' + (ts === t0 ? ' today' : '') + (ts === sel ? ' sel' : '') + (i % 7 >= 5 ? ' we' : '') + (hm[ts / DAY] ? ' hol' : '') +
+        '" data-t="' + ts + '">' + dn + '</button>';
+    }
+    var nm = hm[sel / DAY], fi = ft / DAY, cr = countRange(fi, fi + n);
+    h += '</div><div class="caldet"><b>' + fmtDate(sel) + '</b><span>' + rel(sel) + ' · tydzień ' + isoWeek(sel) + ' · dzień roku ' + dayOfYear(sel) +
+      (nm ? ' · ' + nm : '') + '</span></div>' +
+      '<div class="calf">Dni robocze w miesiącu: <b>' + (cr.wk - cr.hol) + '</b> · weekendy: ' + cr.we + (cr.hol ? ' · święta w dni robocze: ' + cr.hol : '') + '</div></div>';
+    calBox.innerHTML = h;
+  }
+
+  box.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-go]'); if (g) { show(g.dataset.go); return; }
+    var nv = e.target.closest('[data-nav]');
+    if (nv) {
+      var k = +nv.dataset.nav;
+      if (k === 0) resetCal();
+      else {
+        var tot = cy * 12 + (cm - 1) + k, ny = fdiv(tot, 12);
+        if (ny < 1000 || ny > 9999) return;
+        cy = ny; cm = mod(tot, 12) + 1;
+        sel = (parts(sel).y === cy && parts(sel).m === cm) ? sel : utc(cy, cm, 1);
+      }
+      calRender(); return;
+    }
+    var d = e.target.closest('.dy');
+    if (d) { sel = +d.dataset.t; calRender(); }
+  });
+
+  function recalc() {
+    var t0 = todayTs(), p = parts(t0), n = today(), tot = leap(p.y) ? 366 : 365, doy = dayOfYear(t0);
+    if (dayKey !== t0) { dayKey = t0; resetCal(); calRender(); }
+    var pct = doy / tot, C = 2 * Math.PI * 30, R = first ? ' rise' : '';
+    var nh = nextHoliday(t0), f13 = nextFri13(t0), cd = cdItems(cdLoad()).filter(function (i) { return i.dd >= 0; }).slice(0, 4);
+    top.innerHTML = '<div class="hero' + R + '"><div class="hero-top"><div><div class="greet">' + greet(n.h) + '</div><div class="hwd">' + WD[p.wd] + '</div><div class="clk">' + clock() + '</div></div>' +
+      '<div class="ring" title="Postęp roku"><svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" class="rb"/><circle cx="38" cy="38" r="30" class="rf" stroke-dasharray="' +
+      (pct * C).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 38 38)"/></svg><span>' + nf(pct * 100) + '%</span></div></div>' +
+      '<div class="hday"><b>' + p.d + '</b><span>' + MON[p.m - 1] + ' ' + p.y + '</span></div>' +
+      '<div class="stats"><div><b>' + isoWeek(t0) + '</b><span>tydzień roku</span></div><div><b>' + doy + '</b><span>dzień roku</span></div><div><b>' + (tot - doy) + '</b><span>do końca roku</span></div></div></div>';
+    var soon = '';
+    if (nh) soon += soonCard('gift', nh.name, nh.ts, Math.round((nh.ts - t0) / DAY), 'info');
+    if (f13) soon += soonCard('ghost', 'piątek 13.', f13, Math.round((f13 - t0) / DAY), 'find');
+    cd.forEach(function (i) { soon += soonCard('cd', esc(i.x.n), i.ts, i.dd, 'cd'); });
+    var html = soon ? '<div class="sub-h">Wkrótce</div><div class="soon' + R + '">' + soon + '</div>' : '';
+    var groups = [], map = {};
+    modes.concat([settingsMode]).forEach(function (m) {
+      if (m.id === 'home') return;
+      var g = m.g || 'Wygląd';
+      if (!map[g]) { map[g] = []; groups.push(g); }
+      map[g].push(m);
+    });
+    groups.forEach(function (g) {
+      html += '<div class="sub-h">' + g + '</div><div class="tiles' + R + '">' + map[g].map(function (m) {
+        return '<button class="tile" data-go="' + m.id + '"><span class="ic">' + ico(m.icon) + '</span><b>' + m.name + '</b><small>' + m.s + '</small></button>';
+      }).join('') + '</div>';
+    });
+    rest.innerHTML = html;
+    first = false;
+  }
+  timer = setInterval(function () {
+    if (!box.isConnected) { clearInterval(timer); return; }
+    var c = box.querySelector('.clk'); if (c) c.textContent = clock();
+    if (dayKey !== todayTs()) recalc();
+  }, 10000);
   return recalc;
 }
 
@@ -1098,22 +1254,22 @@ function buildSettings(v) {
    POWŁOKA: menu boczne, tytuł, kopiowanie, start
    ===================================================== */
 var modes = [
-  { id: 'home', g: 'Start', icon: '🏠', name: 'Start', s: 'Dzisiaj i skróty', hint: 'Wybierz, co chcesz policzyć. Menu ☰ z wszystkimi funkcjami jest po lewej (możesz je też przesunąć palcem od lewej krawędzi).', build: buildHome, noRes: true },
-  { id: 'add', g: 'Daty', icon: '➕', name: 'Dodaj / odejmij', s: 'Jaka data będzie za…', hint: 'Wybierz datę i dodaj lub odejmij czas: od minut po lata.', build: buildAdd },
-  { id: 'diff', g: 'Daty', icon: '↔️', name: 'Różnica dat', s: 'Ile czasu dzieli dwie daty', hint: 'Policz, ile czasu dzieli dwie daty (lata, dni, godziny, dni robocze).', build: buildDiff },
-  { id: 'work', g: 'Daty', icon: '💼', name: 'Dni robocze', s: 'Bez weekendów i świąt', hint: 'Dodaj lub odejmij dni robocze, z pominięciem weekendów i świąt.', build: buildWork },
-  { id: 'age', g: 'Daty', icon: '🎂', name: 'Wiek i rocznice', s: 'Ile lat i kiedy urodziny', hint: 'Ile masz lat i kiedy następne urodziny. Działa też dla dowolnej rocznicy.', build: buildAge },
-  { id: 'special', g: 'Specjalne daty', icon: '⭐', name: 'Następna taka data', s: 'Kiedy znowu i w jaki dzień', hint: 'Wpisz datę (np. 7.05) i zobacz, kiedy będzie następna oraz jaki to dzień tygodnia w kolejnych latach.', build: buildSpecial },
-  { id: 'info', g: 'Specjalne daty', icon: '📅', name: 'Info o dacie', s: 'Dzień tygodnia, tydzień, rok przestępny', hint: 'Wpisz dowolną datę: dzień tygodnia, numer tygodnia, dzień roku, rok przestępny i więcej.', build: buildInfo },
-  { id: 'find', g: 'Specjalne daty', icon: '🔎', name: 'Szukaj daty', s: 'Piątek 13., n-ty poniedziałek', hint: 'Znajdź przyszłe daty, np. każdy piątek 13. albo ostatnią niedzielę marca.', build: buildFind },
-  { id: 'cd', g: 'Specjalne daty', icon: '⏳', name: 'Odliczanie', s: 'Własne wydarzenia', hint: 'Zapisz ważne wydarzenia i patrz, ile dni zostało. Zapisują się w tym telefonie.', build: buildCountdown, noRes: true },
-  { id: 'sum', g: 'Czas i ruch', icon: '⏱️', name: 'Sumator czasu', s: 'Dodawanie czasów trwania', hint: 'Zsumuj lub odejmij czasy trwania, np. godziny pracy czy długość nagrań.', build: buildSum },
-  { id: 'pace', g: 'Czas i ruch', icon: '🚴', name: 'Tempo i prędkość', s: 'Dystans, czas, km/h', hint: 'Dystans, czas, tempo, prędkość: podaj dowolne dwie wartości, a resztę policzę.', build: buildPace },
-  { id: 'conv', g: 'Czas i ruch', icon: '🔄', name: 'Konwerter jednostek', s: 'Minuty, dni, lata…', hint: 'Przelicz sekundy, minuty, godziny, dni, tygodnie, miesiące i lata.', build: buildConv }
+  { id: 'home', g: 'Start', icon: 'home', name: 'Start', s: 'Dzisiaj i skróty', hint: '', build: buildHome, noRes: true },
+  { id: 'add', g: 'Daty', icon: 'add', name: 'Dodaj / odejmij', s: 'Jaka data będzie za…', hint: 'Wybierz datę i dodaj lub odejmij czas: od minut po lata.', build: buildAdd },
+  { id: 'diff', g: 'Daty', icon: 'diff', name: 'Różnica dat', s: 'Ile czasu dzieli dwie daty', hint: 'Policz, ile czasu dzieli dwie daty (lata, dni, godziny, dni robocze).', build: buildDiff },
+  { id: 'work', g: 'Daty', icon: 'work', name: 'Dni robocze', s: 'Bez weekendów i świąt', hint: 'Dodaj lub odejmij dni robocze, z pominięciem weekendów i świąt.', build: buildWork },
+  { id: 'age', g: 'Daty', icon: 'age', name: 'Wiek i rocznice', s: 'Ile lat i kiedy urodziny', hint: 'Ile masz lat i kiedy następne urodziny. Działa też dla dowolnej rocznicy.', build: buildAge },
+  { id: 'special', g: 'Specjalne daty', icon: 'special', name: 'Następna taka data', s: 'Kiedy znowu i w jaki dzień', hint: 'Wpisz datę (np. 7.05) i zobacz, kiedy będzie następna oraz jaki to dzień tygodnia w kolejnych latach.', build: buildSpecial },
+  { id: 'info', g: 'Specjalne daty', icon: 'info', name: 'Info o dacie', s: 'Dzień tygodnia, tydzień, rok przestępny', hint: 'Wpisz dowolną datę: dzień tygodnia, numer tygodnia, dzień roku, rok przestępny i więcej.', build: buildInfo },
+  { id: 'find', g: 'Specjalne daty', icon: 'find', name: 'Szukaj daty', s: 'Piątek 13., n-ty poniedziałek', hint: 'Znajdź przyszłe daty, np. każdy piątek 13. albo ostatnią niedzielę marca.', build: buildFind },
+  { id: 'cd', g: 'Specjalne daty', icon: 'cd', name: 'Odliczanie', s: 'Własne wydarzenia', hint: 'Zapisz ważne wydarzenia i patrz, ile dni zostało. Zapisują się w tym telefonie.', build: buildCountdown, noRes: true },
+  { id: 'sum', g: 'Czas i ruch', icon: 'sum', name: 'Sumator czasu', s: 'Dodawanie czasów trwania', hint: 'Zsumuj lub odejmij czasy trwania, np. godziny pracy czy długość nagrań.', build: buildSum },
+  { id: 'pace', g: 'Czas i ruch', icon: 'pace', name: 'Tempo i prędkość', s: 'Dystans, czas, km/h', hint: 'Dystans, czas, tempo, prędkość: podaj dowolne dwie wartości, a resztę policzę.', build: buildPace },
+  { id: 'conv', g: 'Czas i ruch', icon: 'conv', name: 'Konwerter jednostek', s: 'Minuty, dni, lata…', hint: 'Przelicz sekundy, minuty, godziny, dni, tygodnie, miesiące i lata.', build: buildConv }
 ];
-var settingsMode = { id: 'settings', icon: '⚙️', name: 'Ustawienia', s: 'Kolor akcentu i wygląd', hint: 'Dostosuj wygląd aplikacji.', build: buildSettings, noRes: true };
+var settingsMode = { id: 'settings', icon: 'settings', name: 'Ustawienia', s: 'Kolor akcentu i wygląd', hint: 'Dostosuj wygląd aplikacji.', build: buildSettings, noRes: true };
 
-var view = $('#view'), out = $('#out'), titleEl = $('#title'), hintEl = $('#hint'), resbar = $('#resbar'), foot = $('#foot');
+var view = $('#view'), out = $('#out'), titleEl = $('#title'), ticoEl = $('#tico'), hintEl = $('#hint'), resbar = $('#resbar'), foot = $('#foot');
 var drawerOpen = false, recalcCur = function () {}, curId = null;
 
 function toast(t) {
@@ -1124,12 +1280,17 @@ function toast(t) {
 function show(id) {
   var m = id === 'settings' ? settingsMode : modes.filter(function (x) { return x.id === id; })[0] || modes[0];
   curId = m.id;
-  titleEl.textContent = m.name; hintEl.textContent = m.hint; hintEl.hidden = !m.hint;
+  titleEl.textContent = m.name; ticoEl.innerHTML = ico(m.icon); hintEl.textContent = m.hint; hintEl.hidden = !m.hint;
   document.querySelectorAll('.ditem').forEach(function (b) { b.setAttribute('aria-current', b.dataset.id === m.id ? 'page' : 'false'); });
   view.innerHTML = ''; out.innerHTML = '';
   out.hidden = !!m.noRes; foot.hidden = !!m.noRes; resbar.hidden = true;
   recalcCur = m.build(view, out);
   recalcCur();
+  if (m.id !== 'home') {
+    var ai = 0;
+    Array.prototype.forEach.call(view.children, function (ch) { ch.classList.add('rise'); ch.style.animationDelay = (ai++ * 45) + 'ms'; });
+    out.classList.remove('rise'); void out.offsetWidth; out.classList.add('rise'); out.style.animationDelay = (ai * 45) + 'ms';
+  }
   if (m.id !== 'settings') lsSet('kt-tab', m.id);
   window.scrollTo(0, 0);
 }
@@ -1163,10 +1324,10 @@ document.addEventListener('touchend', function (e) {
   var html = '', lastG = null;
   modes.forEach(function (m) {
     if (m.g !== lastG) { html += '<div class="dgroup">' + m.g + '</div>'; lastG = m.g; }
-    html += '<button class="ditem" data-id="' + m.id + '"><span class="ic">' + m.icon + '</span>' + m.name + '</button>';
+    html += '<button class="ditem" data-id="' + m.id + '"><span class="ic">' + ico(m.icon) + '</span>' + m.name + '</button>';
   });
   $('#dlist').innerHTML = html;
-  $('#dfoot').innerHTML = '<button class="ditem" data-id="settings"><span class="ic">' + settingsMode.icon + '</span>' + settingsMode.name + '</button>';
+  $('#dfoot').innerHTML = '<button class="ditem" data-id="settings"><span class="ic">' + ico(settingsMode.icon) + '</span>' + settingsMode.name + '</button>';
   $('#drawer').addEventListener('click', function (e) {
     var b = e.target.closest('.ditem'); if (!b) return;
     closeDrawer(); show(b.dataset.id);
