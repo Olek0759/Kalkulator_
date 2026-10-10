@@ -10,7 +10,7 @@
 <title>Kalkulator czasu</title>
 <style>
   :root { --bg:#1c1c1e; --card:#2c2c2e; --card2:#3a3a3c; --line:#48484a; --txt:#f5f5f7; --mut:#9a9aa1;
-          --acc:#ff9f0a; --err:#ff6b6b; color-scheme:dark light; }
+          --acc:#ff9f0a; --onacc:#000; --accsoft:rgba(255,159,10,.18); --err:#ff6b6b; color-scheme:dark light; }
   @media (prefers-color-scheme: light) {
     :root { --bg:#f2f2f7; --card:#fff; --card2:#e9e9ee; --line:#d6d6dc; --txt:#111; --mut:#6c6c73; }
   }
@@ -18,16 +18,35 @@
   [hidden] { display:none !important; }
   html,body { margin:0; background:var(--bg); color:var(--txt);
     font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif; }
-  .app { max-width:520px; margin:0 auto; padding:10px 12px calc(28px + env(safe-area-inset-bottom)); }
-  h1 { font-size:20px; font-weight:600; margin:6px 4px 8px; }
-  .tabs { display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:none;
-          position:sticky; top:0; background:var(--bg); z-index:5; }
-  .tabs::-webkit-scrollbar { display:none; }
+  body.open { overflow:hidden; }
   button { font:inherit; touch-action:manipulation; cursor:pointer; }
-  .tab { flex:none; border:0; border-radius:999px; padding:9px 14px; background:var(--card); color:var(--txt); font-size:15px; }
-  .tab[aria-selected=true] { background:var(--acc); color:#000; font-weight:600; }
+  .app { max-width:520px; margin:0 auto; padding:0 12px calc(28px + env(safe-area-inset-bottom)); }
+
+  /* pasek górny + menu boczne */
+  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:10px 0; background:var(--bg); }
+  .burger { flex:none; width:46px; height:46px; border:0; border-radius:14px; background:var(--card); color:var(--txt); display:grid; place-items:center; }
+  .burger i { display:block; width:20px; height:2px; background:currentColor; box-shadow:0 -6px 0 currentColor, 0 6px 0 currentColor; }
+  .top h1 { margin:0; font-size:20px; font-weight:600; line-height:1.2; }
+  .scrim { position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30; }
+  .drawer { position:fixed; top:0; bottom:0; left:0; width:min(84vw,330px); background:var(--card); z-index:40;
+            transform:translateX(-104%); transition:transform .22s ease; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top); }
+  body.open .scrim { opacity:1; pointer-events:auto; }
+  body.open .drawer { transform:none; }
+  .dhead { padding:20px 20px 6px; }
+  .dhead b { display:block; font-size:19px; }
+  .dhead span { color:var(--mut); font-size:13px; }
+  .dlist { flex:1; overflow-y:auto; padding:0 10px 10px; }
+  .dgroup { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); padding:16px 12px 4px; }
+  .ditem { display:flex; align-items:center; gap:12px; width:100%; border:0; background:transparent; color:var(--txt);
+           padding:12px; border-radius:12px; font-size:16px; text-align:left; }
+  .ditem .ic { width:26px; text-align:center; font-size:19px; flex:none; }
+  .ditem[aria-current=page] { background:var(--accsoft); color:var(--acc); font-weight:600; }
+  .dfoot { border-top:1px solid var(--line); padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
+
+  .hint { color:var(--mut); font-size:14px; margin:2px 2px 12px; }
   .card { background:var(--card); border-radius:16px; padding:14px; margin:0 0 12px; }
   .card-h { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; font-weight:600; }
+  .sub-h { font-size:13px; color:var(--mut); margin:14px 0 6px; }
   .row { display:flex; gap:8px; }
   .f { flex:1; display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--mut); min-width:0; }
   .f.w2 { flex:1.6; }
@@ -39,47 +58,76 @@
   .chk { display:flex; align-items:center; gap:8px; font-weight:400; font-size:14px; cursor:pointer; }
   .chk input { width:22px; height:22px; accent-color:var(--acc); margin:0; flex:none; }
   .seg { display:flex; background:var(--card2); border-radius:12px; padding:3px; gap:3px; }
-  .seg button { flex:1; border:0; border-radius:9px; padding:9px; background:transparent; color:var(--txt); font-size:16px; }
-  .seg button[aria-pressed=true] { background:var(--acc); color:#000; font-weight:600; }
+  .seg button { flex:1; border:0; border-radius:9px; padding:9px 6px; background:transparent; color:var(--txt); font-size:15px; }
+  .seg button[aria-pressed=true] { background:var(--acc); color:var(--onacc); font-weight:600; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; }
   .chip { border:0; border-radius:999px; padding:7px 12px; background:var(--card2); color:var(--txt); font-size:14px; }
-  .btn { border:0; border-radius:12px; padding:10px 14px; background:var(--card2); color:var(--txt); font-size:15px; }
+  .btn { border:0; border-radius:12px; padding:11px 14px; background:var(--card2); color:var(--txt); font-size:15px; }
+  .btn.pri { background:var(--acc); color:var(--onacc); font-weight:600; }
   .opts { display:flex; flex-direction:column; gap:12px; }
+  details summary { cursor:pointer; color:var(--acc); font-size:15px; padding:4px 0; }
+  .pill { margin-top:10px; padding:8px 12px; border-radius:10px; background:var(--accsoft); color:var(--acc); font-size:14px; }
+
   .res { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
   .res .big { font-size:25px; font-weight:600; line-height:1.25; }
   .res .sub { color:var(--mut); margin-top:4px; }
+  .big + .kv, .sub + .kv { margin-top:12px; }
   .kv { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-top:1px solid var(--line); }
-  .kv:first-of-type { margin-top:12px; }
   .kv span { color:var(--mut); flex:none; }
   .kv b { text-align:right; font-weight:600; }
+  .kv b.we { color:var(--acc); }
+  .kv.cur span { color:var(--txt); font-weight:600; }
   .msg { color:var(--mut); }
   .err { color:var(--err); }
   .note { font-size:13px; color:var(--mut); margin:10px 2px 0; }
+  .resbar { display:flex; justify-content:flex-end; margin-top:10px; }
   .srow { display:flex; gap:6px; align-items:center; margin-bottom:8px; }
   .srow input { padding:10px 2px; font-size:17px; }
   .srow .sgn, .srow .del { flex:none; width:40px; height:44px; border:0; border-radius:10px; background:var(--card2); color:var(--txt); font-size:22px; }
   .srow .sgn[data-s="-1"] { color:var(--err); }
   .mt { margin-top:12px; }
   .mt8 { margin-top:8px; }
+  .sw { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .swc { aspect-ratio:1; border-radius:50%; border:3px solid transparent; box-shadow:inset 0 0 0 2px rgba(0,0,0,.25); }
+  .swc[aria-pressed=true] { border-color:var(--txt); }
+  input[type=color] { width:46px; height:36px; border:0; padding:0; background:none; }
+  .toast { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translate(-50%,20px); background:var(--card2); color:var(--txt);
+           padding:10px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; z-index:60; box-shadow:0 4px 20px rgba(0,0,0,.35); }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
 </style>
 </head>
 <body>
 <div class="app">
-  <h1>Kalkulator czasu</h1>
-  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="top">
+    <button class="burger" id="burger" aria-label="Otwórz menu" aria-expanded="false"><i></i></button>
+    <h1 id="title">Kalkulator czasu</h1>
+  </div>
+  <p class="hint" id="hint"></p>
   <div id="view"></div>
   <div class="res" id="out" aria-live="polite"></div>
-  <p class="note">Obliczenia kalendarzowe, bez uwzględniania zmiany czasu letni/zimowy. Święta według kalendarza polskiego.</p>
+  <div class="resbar" id="resbar" hidden><button class="btn" id="copy">📋 Kopiuj wynik</button></div>
+  <p class="note" id="foot">Obliczenia kalendarzowe, bez uwzględniania zmiany czasu letni/zimowy. Święta według kalendarza polskiego.</p>
 </div>
+<div class="scrim" id="scrim"></div>
+<nav class="drawer" id="drawer" aria-label="Menu">
+  <div class="dhead"><b>Kalkulator czasu</b><span>Wszystkie funkcje w jednym miejscu</span></div>
+  <div class="dlist" id="dlist"></div>
+  <div class="dfoot" id="dfoot"></div>
+</nav>
+<div class="toast" id="toast"></div>
 
 <script>
 (function () {
 'use strict';
 
+var APP_VERSION = '3';
+
 /* ---------- stałe i drobne pomocniki ---------- */
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
 var WD = ['niedziela','poniedziałek','wtorek','środa','czwartek','piątek','sobota'];
+var WDW = ['w niedzielę','w poniedziałek','we wtorek','w środę','w czwartek','w piątek','w sobotę'];
 var MON = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
+var MONN = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
 var U = { rok:['rok','lata','lat'], mies:['miesiąc','miesiące','miesięcy'], tydz:['tydzień','tygodnie','tygodni'],
           dzien:['dzień','dni','dni'], godz:['godzina','godziny','godzin'], min:['minuta','minuty','minut'], sek:['sekunda','sekundy','sekund'] };
 var RANGE = 'Wynik wychodzi poza obsługiwany zakres lat (1000–9999).';
@@ -100,9 +148,11 @@ function nfs(n) { return n.toLocaleString('pl-PL', { maximumSignificantDigits: 7
 function cnt(n, u) { return nf(n) + ' ' + pl(n, U[u]); }
 function daysText(x) { return Number.isInteger(x) ? cnt(x, 'dzien') : nf(x, 2) + ' dnia'; }
 function joinPl(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' i ' + a[a.length - 1] : a[0]; }
-function kv(a, b) { return '<div class="kv"><span>' + a + '</span><b>' + b + '</b></div>'; }
+function kv(a, b, cls) { return '<div class="kv' + (cls ? ' ' + cls : '') + '"><span>' + a + '</span><b>' + b + '</b></div>'; }
 function msg(t) { return '<div class="msg">' + t + '</div>'; }
 function errm(t) { return '<div class="err">' + t + '</div>'; }
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
 /* ---------- daty (liczone w UTC jako „czas kalendarzowy”) ---------- */
 function utc(y, m, d, h, mi) {
@@ -177,7 +227,7 @@ function relLong(ts) {
   return fmtBreak(breakdown(t1, t0)) + ' temu';
 }
 
-/* ---------- polskie święta ---------- */
+/* ---------- polskie święta i daty ruchome ---------- */
 var hcache = {};
 function easter(y) {
   var a = y % 19, b = fdiv(y, 100), c = y % 100, d = fdiv(b, 4), e = b % 4, f = fdiv(b + 8, 25), g = fdiv(b - f + 1, 3);
@@ -185,9 +235,10 @@ function easter(y) {
   var m = fdiv(a + 11 * h + 22 * l, 451);
   return { m: fdiv(h + l - 7 * m + 114, 31), d: ((h + l - 7 * m + 114) % 31) + 1 };
 }
+function easterTs(y) { var e = easter(y); return utc(y, e.m, e.d); }
 function holidays(y) {
   if (hcache[y]) return hcache[y];
-  var ea = easter(y), e = utc(y, ea.m, ea.d) / DAY;
+  var e = easterTs(y) / DAY;
   var list = [
     [utc(y, 1, 1) / DAY, 'Nowy Rok'], [utc(y, 1, 6) / DAY, 'Trzech Króli'], [e, 'Wielkanoc'],
     [e + 1, 'Poniedziałek Wielkanocny'], [utc(y, 5, 1) / DAY, 'Święto Pracy'],
@@ -217,7 +268,7 @@ function countRange(s, e) {
   return { total: Math.max(0, e - s), wk: wk, we: we, hol: hol };
 }
 
-/* ---------- pole daty (dzień / miesiąc / rok, opcjonalnie godzina) ---------- */
+/* ---------- elementy formularzy ---------- */
 function dateField(title, o) {
   o = o || {};
   var root = el('div', 'card');
@@ -282,9 +333,9 @@ function dateField(title, o) {
   return { root: root, read: read, showTime: showTime, get: get, set: set };
 }
 
-function nfld(c, label, ph) {
-  return '<label class="f"><span>' + label + '</span><input type="text" class="' + c +
-    '" data-num="int" inputmode="numeric" maxlength="6" placeholder="' + (ph || '0') + '" autocomplete="off"></label>';
+function nfld(c, label, ph, max, dec) {
+  return '<label class="f"><span>' + label + '</span><input type="text" class="' + c + '" data-num="' + (dec ? 'dec' : 'int') +
+    '" inputmode="' + (dec ? 'decimal' : 'numeric') + '" maxlength="' + (max || 6) + '" placeholder="' + (ph || '0') + '" autocomplete="off"></label>';
 }
 function rd(root, c) { var v = $('.' + c, root).value; return v === '' ? 0 : parseInt(v, 10); }
 function segVal(root) { return +$('.seg [aria-pressed=true]', root).dataset.v; }
@@ -294,9 +345,19 @@ function segHtml(a, b) {
 function chkHtml(c, label, checked) {
   return '<label class="chk"><input type="checkbox" class="' + c + '"' + (checked ? ' checked' : '') + '><span>' + label + '</span></label>';
 }
+function selHtml(cls, opts, any, sel) {
+  return '<select class="' + cls + '">' + (any ? '<option value="">dowolny</option>' : '') +
+    opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(sel) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+}
+function lblSel(label, html) { return '<label class="f"><span>' + label + '</span>' + html + '</label>'; }
+function chipsHtml(arr) {
+  return arr.map(function (x, i) { return '<button class="chip" data-i="' + i + '">' + x[0] + '</button>'; }).join('');
+}
+var WDOPTS = [[1, 'poniedziałek'], [2, 'wtorek'], [3, 'środa'], [4, 'czwartek'], [5, 'piątek'], [6, 'sobota'], [0, 'niedziela']];
+var MONOPTS = MONN.map(function (n, i) { return [i + 1, n]; });
 
 /* =====================================================
-   TRYB 1: dodaj / odejmij czas od daty
+   TRYB: dodaj / odejmij czas od daty
    ===================================================== */
 function buildAdd(v, out) {
   var f = dateField('Data początkowa'); v.appendChild(f.root);
@@ -344,7 +405,7 @@ function buildAdd(v, out) {
 }
 
 /* =====================================================
-   TRYB 2: różnica między datami
+   TRYB: różnica między datami
    ===================================================== */
 function buildDiff(v, out) {
   var A = dateField('Od', { todayLabel: 'Dziś' }), B = dateField('Do', { todayLabel: 'Dziś' });
@@ -387,7 +448,7 @@ function buildDiff(v, out) {
 }
 
 /* =====================================================
-   TRYB 3: dodaj / odejmij dni robocze
+   TRYB: dni robocze
    ===================================================== */
 function buildWork(v, out) {
   var f = dateField('Data początkowa'); v.appendChild(f.root);
@@ -425,7 +486,7 @@ function buildWork(v, out) {
 }
 
 /* =====================================================
-   TRYB 4: wiek i urodziny
+   TRYB: wiek
    ===================================================== */
 function buildAge(v, out) {
   var B = dateField('Data urodzenia', { noToday: true });
@@ -460,7 +521,167 @@ function buildAge(v, out) {
 }
 
 /* =====================================================
-   TRYB 5: sumator czasu trwania
+   TRYB: następna taka data (specjalne daty)
+   ===================================================== */
+var POP = [
+  ['Walentynki', 14, 2], ['Dzień Kobiet', 8, 3], ['Dzień Babci', 21, 1], ['Dzień Dziadka', 22, 1],
+  ['Dzień Matki', 26, 5], ['Dzień Dziecka', 1, 6], ['Dzień Ojca', 23, 6], ['Dzień Chłopaka', 30, 9],
+  ['Halloween', 31, 10], ['Andrzejki', 29, 11], ['Mikołajki', 6, 12], ['Wigilia', 24, 12],
+  ['Sylwester', 31, 12], ['29 lutego', 29, 2],
+  ['Wielkanoc', 0, 0, function (y) { return easterTs(y); }],
+  ['Tłusty czwartek', 0, 0, function (y) { return easterTs(y) - 52 * DAY; }],
+  ['Środa Popielcowa', 0, 0, function (y) { return easterTs(y) - 46 * DAY; }],
+  ['Boże Ciało', 0, 0, function (y) { return easterTs(y) + 60 * DAY; }]
+];
+function nextOcc(getTs, from) {
+  var y0 = parts(from).y;
+  for (var y = y0; y <= y0 + 40 && y <= 9999; y++) { var t = getTs(y); if (t != null && t >= from) return { y: y, ts: t }; }
+  return null;
+}
+function prevOcc(getTs, from) {
+  var y0 = parts(from).y;
+  for (var y = y0; y >= y0 - 40 && y >= 1000; y--) { var t = getTs(y); if (t != null && t < from) return { y: y, ts: t }; }
+  return null;
+}
+function buildSpecial(v, out) {
+  var mov = null;
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Data (bez roku)</span></div><div class="row">' +
+    nfld('sd', 'Dzień', 'DD', 2) + nfld('sm', 'Miesiąc', 'MM', 2) + '<div class="f w2"></div></div>' +
+    '<div class="pill" hidden></div>' +
+    '<details class="mt"><summary>Popularne daty (kliknij, aby wybrać)</summary><div class="chips mt8">' + chipsHtml(POP) + '</div></details>';
+  var c2 = el('div', 'card');
+  c2.innerHTML = '<div class="row">' + nfld('yrs', 'Ile lat pokazać', '10', 3) + '</div><div class="mt">' + segHtml('Naprzód', 'Wstecz') + '</div>';
+  v.appendChild(c); v.appendChild(c2);
+  $('.yrs', c2).value = '10';
+  var pill = $('.pill', c), SD = $('.sd', c), SM = $('.sm', c);
+  c.addEventListener('input', function (e) {
+    if (e.target === SD || e.target === SM) { mov = null; pill.hidden = true; }
+    if (e.target === SD && (SD.value.length === 2 || (SD.value.length === 1 && +SD.value > 3))) SM.focus();
+  });
+  c.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    var p = POP[+b.dataset.i];
+    if (p[3]) { mov = p; SD.value = ''; SM.value = ''; pill.hidden = false; pill.textContent = 'Wybrano: ' + p[0] + ' (data ruchoma, liczona dla każdego roku osobno)'; }
+    else { mov = null; pill.hidden = true; SD.value = p[1]; SM.value = p[2]; }
+    recalc();
+  });
+  function recalc() {
+    var getTs;
+    if (mov) getTs = mov[3];
+    else {
+      var d = rd(c, 'sd'), m = rd(c, 'sm');
+      if (!d || !m) { out.innerHTML = msg('Wpisz dzień i miesiąc (np. 7 i 5) albo wybierz datę z listy popularnych.'); return; }
+      if (m < 1 || m > 12) { out.innerHTML = errm('Miesiąc musi być od 1 do 12.'); return; }
+      if (d > dim(2024, m)) { out.innerHTML = errm('W tym miesiącu nie ma takiego dnia.'); return; }
+      getTs = function (y) { return d > dim(y, m) ? null : utc(y, m, d); };
+    }
+    var t0 = todayTs(), nx = nextOcc(getTs, t0), pv = prevOcc(getTs, t0);
+    if (!nx) { out.innerHTML = errm('Nie znaleziono następnej takiej daty.'); return; }
+    var N = Math.min(300, Math.max(1, rd(c2, 'yrs') || 10)), dir = segVal(c2), list = [], y, t;
+    if (dir > 0) { for (y = nx.y; list.length < N && y <= 9999; y++) { t = getTs(y); if (t != null) list.push(t); } }
+    else if (pv) { for (y = pv.y; list.length < N && y >= 1000; y--) { t = getTs(y); if (t != null) list.push(t); } }
+    var n = today(), left = nx.ts - utc(n.y, n.m, n.d, n.h, n.mi);
+    var html = '<div class="big">' + (nx.ts === t0 ? 'To dzisiaj!' : rel(nx.ts)) + '</div><div class="sub">' + (mov ? mov[0] + ': ' : 'Następnie: ') + fmtDate(nx.ts) + '</div>';
+    if (nx.ts !== t0) {
+      var dd = Math.round((nx.ts - t0) / DAY);
+      html += kv('Dokładnie', relLong(nx.ts)) +
+        kv('Tygodnie', cnt(Math.floor(dd / 7), 'tydz') + (dd % 7 ? ' i ' + cnt(dd % 7, 'dzien') : '')) +
+        kv('Godziny do początku dnia', nf(left / HOUR));
+    }
+    if (pv) html += kv('Poprzednio', fmtDate(pv.ts) + ' (' + rel(pv.ts) + ')');
+    html += '<div class="sub-h">' + (dir > 0 ? 'Na jaki dzień tygodnia wypada w kolejnych latach:' : 'Na jaki dzień tygodnia wypadało w poprzednich latach:') + '</div>';
+    var counts = [0, 0, 0, 0, 0, 0, 0], weekend = 0;
+    list.forEach(function (ts, i) {
+      var p = parts(ts), we = p.wd === 0 || p.wd === 6;
+      counts[p.wd]++; if (we) weekend++;
+      html += '<div class="kv' + (i === 0 ? ' cur' : '') + '"><span>' + p.y + (i === 0 ? (dir > 0 ? ' · najbliższa' : ' · ostatnia') : '') +
+        '</span><b' + (we ? ' class="we"' : '') + '>' + (mov ? p.d + ' ' + MON[p.m - 1] + ', ' + WD[p.wd] : WD[p.wd]) + '</b></div>';
+    });
+    if (list.length > 1 && !mov) {
+      var mx = Math.max.apply(null, counts), top = [];
+      counts.forEach(function (k, i) { if (k === mx) top.push(WDW[i]); });
+      html += '<div class="note">Najczęściej wypada ' + joinPl(top) + ' (' + mx + '×). W weekend: ' + weekend + ' z ' + list.length + ' lat.</div>';
+    }
+    if (!mov && list.length < N) html += '<div class="note">Ta data występuje tylko w niektórych latach (np. 29 lutego w latach przestępnych).</div>';
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB: szukaj daty (piątek 13., n-ty dzień tygodnia)
+   ===================================================== */
+var FINDP = [
+  ['Piątek 13.', { m: 'a', d: 13, w: 5 }], ['Poniedziałek 1.', { m: 'a', d: 1, w: 1 }], ['29 lutego', { m: 'a', d: 29, mo: 2 }],
+  ['Czarny piątek (4. pt listopada)', { m: 'b', n: 4, w: 5, mo: 11 }], ['Zmiana na czas letni', { m: 'b', n: 'L', w: 0, mo: 3 }],
+  ['Zmiana na czas zimowy', { m: 'b', n: 'L', w: 0, mo: 10 }], ['Święto Dziękczynienia (USA)', { m: 'b', n: 4, w: 4, mo: 11 }],
+  ['Ostatni piątek miesiąca', { m: 'b', n: 'L', w: 5, mo: '' }]
+];
+function buildFind(v, out) {
+  var c = el('div', 'card');
+  c.innerHTML = segHtml('Dzień miesiąca', 'N-ty dzień tygodnia') +
+    '<div class="pa mt"><div class="row">' + nfld('fd', 'Dzień miesiąca', '13', 2) + lblSel('Miesiąc', selHtml('fmo', MONOPTS, true)) + '</div>' +
+    '<div class="row mt8">' + lblSel('Dzień tygodnia', selHtml('fw', WDOPTS, true)) + '</div>' +
+    '<div class="chips mt">' + FINDP.map(function (x, i) { return x[1].m === 'a' ? '<button class="chip" data-i="' + i + '">' + x[0] + '</button>' : ''; }).join('') + '</div></div>' +
+    '<div class="pb mt" hidden><div class="row">' + lblSel('Który', selHtml('fn', [[1, '1.'], [2, '2.'], [3, '3.'], [4, '4.'], ['L', 'ostatni']], false, 1)) +
+    lblSel('Dzień tygodnia', selHtml('fw2', WDOPTS, false, 5)) + '</div>' +
+    '<div class="row mt8">' + lblSel('Miesiąc', selHtml('fm2', MONOPTS, true)) + '</div>' +
+    '<div class="chips mt">' + FINDP.map(function (x, i) { return x[1].m === 'b' ? '<button class="chip" data-i="' + i + '">' + x[0] + '</button>' : ''; }).join('') + '</div></div>' +
+    '<div class="row mt">' + lblSel('Ile wyników', selHtml('cnt', [[5, '5'], [10, '10'], [20, '20'], [50, '50']], false, 10)) + '<div class="f w2"></div></div>';
+  v.appendChild(c);
+  c.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    var p = FINDP[+b.dataset.i][1];
+    if (p.m === 'a') { $('.fd', c).value = p.d; $('.fmo', c).value = p.mo || ''; $('.fw', c).value = p.w == null ? '' : p.w; }
+    else { $('.fn', c).value = p.n; $('.fw2', c).value = p.w; $('.fm2', c).value = p.mo; }
+    recalc();
+  });
+  function recalc() {
+    var modeA = segVal(c) === 1;
+    $('.pa', c).hidden = !modeA; $('.pb', c).hidden = modeA;
+    var N = +$('.cnt', c).value, n = today(), y = n.y, m = n.m, t0 = todayTs(), res = [], guard = 0;
+    var title;
+    if (modeA) {
+      var d = rd(c, 'fd'), mo = $('.fmo', c).value, wd = $('.fw', c).value;
+      if (!d) { out.innerHTML = msg('Wpisz dzień miesiąca (1–31), np. 13. Miesiąc i dzień tygodnia możesz zostawić jako „dowolny”.'); return; }
+      if (d > 31) { out.innerHTML = errm('Dzień miesiąca musi być od 1 do 31.'); return; }
+      if (mo !== '' && d > dim(2024, +mo)) { out.innerHTML = errm('W tym miesiącu nie ma takiego dnia.'); return; }
+      while (res.length < N && guard++ < 4800 && y <= 9999) {
+        if ((mo === '' || +mo === m) && d <= dim(y, m)) {
+          var ts = utc(y, m, d);
+          if (ts >= t0 && (wd === '' || parts(ts).wd === +wd)) res.push(ts);
+        }
+        if (++m > 12) { m = 1; y++; }
+      }
+      title = d + '.' + (mo === '' ? ' dnia miesiąca' : ' ' + MON[+mo - 1]) + (wd === '' ? '' : ', ' + WD[+wd]);
+    } else {
+      var k = $('.fn', c).value, w2 = +$('.fw2', c).value, m2 = $('.fm2', c).value;
+      while (res.length < N && guard++ < 4800 && y <= 9999) {
+        if (m2 === '' || +m2 === m) {
+          var dd;
+          if (k === 'L') { var ld = dim(y, m); dd = ld - mod(parts(utc(y, m, ld)).wd - w2, 7); }
+          else dd = 1 + mod(w2 - parts(utc(y, m, 1)).wd, 7) + (+k - 1) * 7;
+          var t2 = utc(y, m, dd);
+          if (t2 >= t0) res.push(t2);
+        }
+        if (++m > 12) { m = 1; y++; }
+      }
+      title = (k === 'L' ? 'ostatni' : k + '.') + ' ' + WD[w2] + (m2 === '' ? ' miesiąca' : ' (' + MON[+m2 - 1] + ')');
+    }
+    if (!res.length) { out.innerHTML = msg('Nie znaleziono takiej daty w ciągu najbliższych 400 lat.'); return; }
+    var html = '<div class="big">' + fmtDate(res[0]) + '</div><div class="sub">' + rel(res[0]) + ' · szukano: ' + title + '</div>';
+    if (res.length > 1) {
+      html += '<div class="sub-h">Kolejne:</div>';
+      res.slice(1).forEach(function (t) { html += kv(rel(t), fmtDate(t)); });
+    }
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB: sumator czasu trwania
    ===================================================== */
 function buildSum(v, out) {
   var c = el('div', 'card');
@@ -469,8 +690,7 @@ function buildSum(v, out) {
     '<p class="note">Znak przy wierszu zmienia dodawanie (+) na odejmowanie (−).</p>';
   var c2 = el('div', 'card');
   c2.innerHTML = '<div class="card-h"><span>Godzina początkowa (opcjonalnie)</span></div><div class="row">' +
-    nfld('sth', 'Godzina', 'gg').replace('maxlength="6"', 'maxlength="2"') +
-    nfld('stm', 'Minuta', 'mm').replace('maxlength="6"', 'maxlength="2"') + '<div class="f w2"></div></div>';
+    nfld('sth', 'Godzina', 'gg', 2) + nfld('stm', 'Minuta', 'mm', 2) + '<div class="f w2"></div></div>';
   v.appendChild(c); v.appendChild(c2);
   var rows = $('.rows', c);
   function sf(cls, ph) {
@@ -536,14 +756,77 @@ function buildSum(v, out) {
 }
 
 /* =====================================================
-   TRYB 6: konwerter jednostek czasu
+   TRYB: tempo i prędkość (dystans, czas, tempo, prędkość)
+   ===================================================== */
+var DISTS = [['5 km', '5'], ['10 km', '10'], ['Półmaraton', '21,0975'], ['Maraton', '42,195'], ['50 km', '50'], ['100 km', '100']];
+var STD = [['1 km', 1], ['5 km', 5], ['10 km', 10], ['Półmaraton', 21.0975], ['Maraton', 42.195], ['50 km', 50], ['100 km', 100], ['200 km', 200]];
+var MILE = 1.609344;
+function hms(sec) {
+  var s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return h > 0 ? h + ':' + pad(m) + ':' + pad(x) : m + ':' + pad(x);
+}
+function buildPace(v, out) {
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Podaj dowolne dwie wartości</span></div>' +
+    '<div class="row">' + nfld('pd', 'Dystans (km)', '0', 7, true) + '</div>' +
+    '<div class="chips mt8">' + DISTS.map(function (x, i) { return '<button class="chip" data-i="' + i + '">' + x[0] + '</button>'; }).join('') + '</div>' +
+    '<div class="sub-h">Czas</div><div class="row">' + nfld('tg', 'godz.', '0', 3) + nfld('tm', 'min', '0', 3) + nfld('ts', 'sek', '0', 3) + '</div>' +
+    '<div class="sub-h">Tempo (czas na 1 km)</div><div class="row">' + nfld('pm', 'min', '0', 3) + nfld('ps', 'sek', '0', 2) + '<div class="f"></div></div>' +
+    '<div class="sub-h">Prędkość</div><div class="row">' + nfld('pv', 'km/h', '0', 6, true) + '<div class="f"></div></div>' +
+    '<div class="mt"><button class="btn clr">Wyczyść wszystko</button></div>';
+  v.appendChild(c);
+  c.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip');
+    if (b) { $('.pd', c).value = DISTS[+b.dataset.i][1]; recalc(); return; }
+    if (e.target.closest('.clr')) { c.querySelectorAll('input').forEach(function (i) { i.value = ''; }); recalc(); }
+  });
+  function num(cls) {
+    var s = $('.' + cls, c).value; if (s === '' || s === ',') return null;
+    var x = parseFloat(s.replace(',', '.')); return isFinite(x) ? x : null;
+  }
+  function filled(cls) { return $('.' + cls, c).value !== ''; }
+  function recalc() {
+    var dist = num('pd'); if (dist != null && dist <= 0) dist = null;
+    var tsec = null;
+    if (filled('tg') || filled('tm') || filled('ts')) { tsec = rd(c, 'tg') * 3600 + rd(c, 'tm') * 60 + rd(c, 'ts'); if (tsec <= 0) tsec = null; }
+    var pace = null;
+    if (filled('pm') || filled('ps')) { pace = rd(c, 'pm') * 60 + rd(c, 'ps'); if (pace <= 0) pace = null; }
+    var speed = num('pv'); if (speed != null && speed <= 0) speed = null;
+    var notes = [], rate = null;
+    if (pace) { rate = 3600 / pace; if (speed) notes.push('Podano tempo i prędkość, więc użyto tempa.'); }
+    else if (speed) rate = speed;
+    var given = (dist ? 1 : 0) + (tsec ? 1 : 0) + (rate ? 1 : 0);
+    if (given < 2) { out.innerHTML = msg('Podaj dowolne dwie z trzech rzeczy: <b>dystans</b>, <b>czas</b> oraz <b>tempo lub prędkość</b>. Resztę policzę.'); return; }
+    var D, T, V;
+    if (dist && tsec) { D = dist; T = tsec; V = D / (T / 3600); if (rate) notes.push('Podano trzy wartości, więc tempo/prędkość policzono z dystansu i czasu.'); }
+    else if (dist && rate) { D = dist; V = rate; T = D / V * 3600; }
+    else { V = rate; T = tsec; D = V * T / 3600; }
+    var pk = 3600 / V;
+    var html = '<div class="big">' + nf(D, 2) + ' km w ' + hms(T) + '</div>' +
+      '<div class="sub">' + hms(pk) + ' min/km · ' + nf(V, 1) + ' km/h</div>' +
+      kv('Dystans', nf(D, 3) + ' km (' + nf(D / MILE, 2) + ' mi)') +
+      kv('Czas', hms(T)) +
+      kv('Tempo', hms(pk) + ' min/km') +
+      kv('Prędkość', nf(V, 2) + ' km/h') +
+      kv('Tempo w milach', hms(pk * MILE) + ' min/mi') +
+      kv('Prędkość w milach', nf(V / MILE, 2) + ' mph') +
+      '<div class="sub-h">Z takim tempem przejedziesz / przebiegniesz:</div>' +
+      STD.map(function (s) { return kv(s[0], hms(s[1] / V * 3600)); }).join('');
+    if (notes.length) html += '<div class="note">' + notes.join(' ') + '</div>';
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB: konwerter jednostek czasu
    ===================================================== */
 function buildConv(v, out) {
   var units = [['sekundy', 1], ['minuty', 60], ['godziny', 3600], ['dni', 86400], ['tygodnie', 604800],
                ['miesiące (średnio)', 2629800], ['lata (średnio)', 31557600]];
   var c = el('div', 'card');
   c.innerHTML = '<div class="card-h"><span>Przelicz</span></div><div class="row">' +
-    '<label class="f"><span>Wartość</span><input type="text" class="val" data-num="dec" inputmode="decimal" placeholder="0" autocomplete="off"></label>' +
+    nfld('val', 'Wartość', '0', 12, true) +
     '<label class="f w2"><span>Jednostka</span><select class="un">' +
     units.map(function (u, i) { return '<option value="' + i + '"' + (i === 3 ? ' selected' : '') + '>' + u[0] + '</option>'; }).join('') +
     '</select></label></div>';
@@ -561,29 +844,137 @@ function buildConv(v, out) {
   return recalc;
 }
 
-/* ---------- zakładki i obsługa zdarzeń ---------- */
-var modes = [
-  { name: 'Dodaj / odejmij', build: buildAdd },
-  { name: 'Różnica dat', build: buildDiff },
-  { name: 'Dni robocze', build: buildWork },
-  { name: 'Wiek', build: buildAge },
-  { name: 'Sumator czasu', build: buildSum },
-  { name: 'Konwerter', build: buildConv }
-];
-var tabsEl = $('#tabs'), view = $('#view'), out = $('#out'), recalcCur = function () {};
-
-function show(i) {
-  Array.prototype.forEach.call(tabsEl.children, function (b, k) { b.setAttribute('aria-selected', k === i); });
-  view.innerHTML = ''; out.innerHTML = '';
-  recalcCur = modes[i].build(view, out);
-  recalcCur();
-  try { localStorage.setItem('kt-tab', String(i)); } catch (e) {}
+/* =====================================================
+   USTAWIENIA: kolor akcentu
+   ===================================================== */
+var ACCENTS = [['#ff9f0a', 'Pomarańczowy'], ['#0a84ff', 'Niebieski'], ['#30d158', 'Zielony'], ['#40c8e0', 'Turkusowy'],
+               ['#bf5af2', 'Fioletowy'], ['#ff375f', 'Różowy'], ['#ff453a', 'Czerwony'], ['#ffd60a', 'Żółty']];
+var DEF_ACC = '#ff9f0a';
+function applyAccent(hex) {
+  var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255, st = document.documentElement.style;
+  st.setProperty('--acc', hex);
+  st.setProperty('--onacc', lum > 0.6 ? '#000' : '#fff');
+  st.setProperty('--accsoft', 'rgba(' + r + ',' + g + ',' + b + ',.18)');
 }
-modes.forEach(function (m, i) {
-  var b = el('button', 'tab'); b.textContent = m.name; b.setAttribute('role', 'tab');
-  b.addEventListener('click', function () { show(i); window.scrollTo(0, 0); });
-  tabsEl.appendChild(b);
+function buildSettings(v) {
+  var cur = (lsGet('kt-acc') || DEF_ACC).toLowerCase();
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Kolor akcentu</span></div><div class="sw">' +
+    ACCENTS.map(function (a) { return '<button class="swc" data-c="' + a[0] + '" style="background:' + a[0] + '" aria-label="' + a[1] + '" aria-pressed="' + (a[0] === cur) + '"></button>'; }).join('') +
+    '</div><div class="row mt" style="align-items:center;justify-content:space-between"><label class="chk"><span>Własny kolor</span>' +
+    '<input type="color" class="cust" value="' + cur + '"></label><button class="btn rst">Przywróć domyślny</button></div>' +
+    '<p class="note">Kolor zapisuje się w tym telefonie i jest używany w całej aplikacji.</p>';
+  var c2 = el('div', 'card');
+  c2.innerHTML = '<div class="card-h"><span>O aplikacji</span></div>' + kv('Wersja', APP_VERSION) +
+    kv('Działanie offline', 'tak, po zainstalowaniu') + kv('Dane', 'zostają w tym telefonie') +
+    '<div class="mt"><button class="btn clr">Wyczyść zapisane ustawienia</button></div>';
+  v.appendChild(c); v.appendChild(c2);
+  function mark(hex) {
+    c.querySelectorAll('.swc').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.c === hex); });
+    $('.cust', c).value = hex;
+  }
+  function pick(hex) { applyAccent(hex); lsSet('kt-acc', hex); mark(hex); }
+  c.addEventListener('click', function (e) {
+    var b = e.target.closest('.swc'); if (b) { pick(b.dataset.c); return; }
+    if (e.target.closest('.rst')) pick(DEF_ACC);
+  });
+  $('.cust', c).addEventListener('input', function (e) { var h = e.target.value.toLowerCase(); applyAccent(h); lsSet('kt-acc', h); mark(h); });
+  c2.addEventListener('click', function (e) {
+    if (!e.target.closest('.clr')) return;
+    try { localStorage.removeItem('kt-acc'); localStorage.removeItem('kt-tab'); } catch (x) {}
+    pick(DEF_ACC); toast('Przywrócono ustawienia domyślne');
+  });
+  return function () {};
+}
+
+/* =====================================================
+   POWŁOKA: menu boczne, tytuł, kopiowanie, start
+   ===================================================== */
+var modes = [
+  { id: 'add', g: 'Daty', icon: '➕', name: 'Dodaj / odejmij', hint: 'Wybierz datę i dodaj lub odejmij czas: od minut po lata.', build: buildAdd },
+  { id: 'diff', g: 'Daty', icon: '↔️', name: 'Różnica dat', hint: 'Policz, ile czasu dzieli dwie daty (lata, dni, godziny, dni robocze).', build: buildDiff },
+  { id: 'work', g: 'Daty', icon: '💼', name: 'Dni robocze', hint: 'Dodaj lub odejmij dni robocze, z pominięciem weekendów i świąt.', build: buildWork },
+  { id: 'age', g: 'Daty', icon: '🎂', name: 'Wiek i rocznice', hint: 'Ile masz lat i kiedy następne urodziny. Działa też dla dowolnej rocznicy.', build: buildAge },
+  { id: 'special', g: 'Specjalne daty', icon: '⭐', name: 'Następna taka data', hint: 'Wpisz datę (np. 7.05) i zobacz, kiedy będzie następna oraz jaki to dzień tygodnia w kolejnych latach.', build: buildSpecial },
+  { id: 'find', g: 'Specjalne daty', icon: '🔎', name: 'Szukaj daty', hint: 'Znajdź przyszłe daty, np. każdy piątek 13. albo ostatnią niedzielę marca.', build: buildFind },
+  { id: 'sum', g: 'Czas i ruch', icon: '⏱️', name: 'Sumator czasu', hint: 'Zsumuj lub odejmij czasy trwania, np. godziny pracy czy długość nagrań.', build: buildSum },
+  { id: 'pace', g: 'Czas i ruch', icon: '🚴', name: 'Tempo i prędkość', hint: 'Dystans, czas, tempo, prędkość: podaj dowolne dwie wartości, a resztę policzę.', build: buildPace },
+  { id: 'conv', g: 'Czas i ruch', icon: '🔄', name: 'Konwerter jednostek', hint: 'Przelicz sekundy, minuty, godziny, dni, tygodnie, miesiące i lata.', build: buildConv }
+];
+var settingsMode = { id: 'settings', icon: '⚙️', name: 'Ustawienia', hint: 'Dostosuj wygląd aplikacji.', build: buildSettings, noRes: true };
+
+var view = $('#view'), out = $('#out'), titleEl = $('#title'), hintEl = $('#hint'), resbar = $('#resbar'), foot = $('#foot');
+var drawerOpen = false, recalcCur = function () {}, curId = null;
+
+function toast(t) {
+  var x = $('#toast'); x.textContent = t; x.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(function () { x.classList.remove('show'); }, 1700);
+}
+
+function show(id) {
+  var m = id === 'settings' ? settingsMode : modes.filter(function (x) { return x.id === id; })[0] || modes[0];
+  curId = m.id;
+  titleEl.textContent = m.name; hintEl.textContent = m.hint; hintEl.hidden = !m.hint;
+  document.querySelectorAll('.ditem').forEach(function (b) { b.setAttribute('aria-current', b.dataset.id === m.id ? 'page' : 'false'); });
+  view.innerHTML = ''; out.innerHTML = '';
+  out.hidden = !!m.noRes; foot.hidden = !!m.noRes; resbar.hidden = true;
+  recalcCur = m.build(view, out);
+  recalcCur();
+  lsSet('kt-tab', m.id);
+  window.scrollTo(0, 0);
+}
+
+/* menu boczne (przycisk „wstecz” w telefonie też je zamyka) */
+function openDrawer() {
+  if (drawerOpen) return;
+  drawerOpen = true; document.body.classList.add('open'); $('#burger').setAttribute('aria-expanded', 'true');
+  try { history.pushState({ kt: 1 }, ''); } catch (e) {}
+}
+function closeDrawer(fromPop) {
+  if (!drawerOpen) return;
+  drawerOpen = false; document.body.classList.remove('open'); $('#burger').setAttribute('aria-expanded', 'false');
+  if (!fromPop) { try { if (history.state && history.state.kt) history.back(); } catch (e) {} }
+}
+window.addEventListener('popstate', function () { if (drawerOpen) closeDrawer(true); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+$('#burger').addEventListener('click', function () { drawerOpen ? closeDrawer() : openDrawer(); });
+$('#scrim').addEventListener('click', function () { closeDrawer(); });
+
+(function buildDrawerList() {
+  var html = '', lastG = null;
+  modes.forEach(function (m) {
+    if (m.g !== lastG) { html += '<div class="dgroup">' + m.g + '</div>'; lastG = m.g; }
+    html += '<button class="ditem" data-id="' + m.id + '"><span class="ic">' + m.icon + '</span>' + m.name + '</button>';
+  });
+  $('#dlist').innerHTML = html;
+  $('#dfoot').innerHTML = '<button class="ditem" data-id="settings"><span class="ic">' + settingsMode.icon + '</span>' + settingsMode.name + '</button>';
+  $('#drawer').addEventListener('click', function (e) {
+    var b = e.target.closest('.ditem'); if (!b) return;
+    closeDrawer(); show(b.dataset.id);
+  });
+})();
+
+/* kopiowanie wyniku */
+function resultText() {
+  var lines = [];
+  Array.prototype.forEach.call(out.children, function (n) {
+    if (n.classList.contains('kv')) lines.push($('span', n).textContent + ': ' + $('b', n).textContent);
+    else lines.push(n.textContent.trim());
+  });
+  return titleEl.textContent + '\n' + lines.join('\n');
+}
+$('#copy').addEventListener('click', function () {
+  var t = resultText();
+  function fallback() {
+    var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+    try { document.execCommand('copy'); toast('Skopiowano'); } catch (e) { toast('Nie udało się skopiować'); }
+    a.remove();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast('Skopiowano'); }, fallback);
+  else fallback();
 });
+new MutationObserver(function () { resbar.hidden = out.hidden || !$('.big', out); }).observe(out, { childList: true });
 
 /* filtr znaków w polach liczbowych (faza przechwytywania, działa przed resztą) */
 document.addEventListener('input', function (e) {
@@ -603,11 +994,12 @@ view.addEventListener('click', function (e) {
   Array.prototype.forEach.call(b.parentNode.children, function (x) { x.setAttribute('aria-pressed', x === b); });
   recalcCur();
 });
-document.addEventListener('visibilitychange', function () { if (!document.hidden) recalcCur(); });
+document.addEventListener('visibilitychange', function () { if (!document.hidden && curId !== 'settings') recalcCur(); });
 
-var start = 0;
-try { var sv = parseInt(localStorage.getItem('kt-tab'), 10); if (sv >= 0 && sv < modes.length) start = sv; } catch (e) {}
-show(start);
+/* start: zapisany kolor i ostatnio używana zakładka */
+var savedAcc = lsGet('kt-acc');
+if (savedAcc && /^#[0-9a-f]{6}$/i.test(savedAcc)) applyAccent(savedAcc);
+show(lsGet('kt-tab') || modes[0].id);
 
 /* ---------- offline + automatyczna aktualizacja ---------- */
 if ('serviceWorker' in navigator) {
