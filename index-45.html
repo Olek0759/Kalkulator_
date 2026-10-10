@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1c1c1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kalkulator</title>
+<style>
+  :root { --bg:#1c1c1e; --key:#2c2c2e; --key2:#3a3a3c; --op:#ff9f0a; --txt:#fff; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt);
+    font-family:system-ui,-apple-system,Roboto,sans-serif; overscroll-behavior:none; }
+  .app { height:100%; display:flex; flex-direction:column; padding:12px 12px max(12px,env(safe-area-inset-bottom)); max-width:480px; margin:0 auto; }
+  .display { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; padding:8px 12px 16px; overflow:hidden; }
+  .expr { font-size:20px; color:#8e8e93; min-height:26px; word-break:break-all; text-align:right; }
+  .value { font-size:72px; font-weight:300; line-height:1.1; white-space:nowrap; }
+  .keys { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  button { border:0; border-radius:50%; aspect-ratio:1; font-size:30px; color:var(--txt);
+    background:var(--key); cursor:pointer; touch-action:manipulation; }
+  button:active { filter:brightness(1.4); }
+  button.fn { background:var(--key2); }
+  button.op { background:var(--op); }
+  button.op.active { background:#fff; color:var(--op); }
+  button.zero { grid-column:span 2; aspect-ratio:auto; border-radius:999px; text-align:left; padding-left:10%; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="value" id="value">0</div>
+  </div>
+  <div class="keys" id="keys">
+    <button class="fn" data-a="clear" id="clr">AC</button>
+    <button class="fn" data-a="sign">±</button>
+    <button class="fn" data-a="percent">%</button>
+    <button class="op" data-a="op" data-v="÷">÷</button>
+
+    <button data-a="num" data-v="7">7</button>
+    <button data-a="num" data-v="8">8</button>
+    <button data-a="num" data-v="9">9</button>
+    <button class="op" data-a="op" data-v="×">×</button>
+
+    <button data-a="num" data-v="4">4</button>
+    <button data-a="num" data-v="5">5</button>
+    <button data-a="num" data-v="6">6</button>
+    <button class="op" data-a="op" data-v="−">−</button>
+
+    <button data-a="num" data-v="1">1</button>
+    <button data-a="num" data-v="2">2</button>
+    <button data-a="num" data-v="3">3</button>
+    <button class="op" data-a="op" data-v="+">+</button>
+
+    <button class="zero" data-a="num" data-v="0">0</button>
+    <button data-a="dot">,</button>
+    <button class="op" data-a="eq">=</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var cur = "0";        // aktualnie wpisywana liczba (string)
+  var acc = null;       // wartość zapamiętana
+  var op = null;        // oczekujący operator
+  var fresh = true;     // następna cyfra zaczyna nową liczbę
+  var exprEl = document.getElementById("expr");
+  var valEl = document.getElementById("value");
+  var clr = document.getElementById("clr");
+
+  function calc(a, b, o) {
+    switch (o) {
+      case "+": return a + b;
+      case "−": return a - b;
+      case "×": return a * b;
+      case "÷": return b === 0 ? NaN : a / b;
+    }
+    return b;
+  }
+  function fmt(s) {
+    if (s === "Błąd") return s;
+    var n = Number(s);
+    if (!isFinite(n)) return "Błąd";
+    var str = String(s);
+    if (str.indexOf("e") === -1 && str.length <= 12) return str.replace(".", ",");
+    return String(parseFloat(n.toPrecision(10))).replace(".", ",");
+  }
+  function show() {
+    valEl.textContent = fmt(cur);
+    var l = valEl.textContent.length;
+    valEl.style.fontSize = l > 12 ? "40px" : l > 9 ? "52px" : l > 6 ? "64px" : "72px";
+    exprEl.textContent = acc !== null && op ? fmt(String(acc)) + " " + op : "";
+    clr.textContent = (cur === "0" && acc === null) ? "AC" : "C";
+    document.querySelectorAll("button.op[data-a=op]").forEach(function (b) {
+      b.classList.toggle("active", fresh && op === b.dataset.v);
+    });
+  }
+  function num(d) {
+    if (cur === "Błąd") cur = "0";
+    if (fresh) { cur = d; fresh = false; }
+    else if (cur.replace(/[-.]/g, "").length < 12) cur = (cur === "0") ? d : cur + d;
+    show();
+  }
+  function dot() {
+    if (cur === "Błąd") cur = "0";
+    if (fresh) { cur = "0."; fresh = false; }
+    else if (cur.indexOf(".") === -1) cur += ".";
+    show();
+  }
+  function setOp(o) {
+    if (cur === "Błąd") return;
+    if (acc !== null && op && !fresh) {
+      var r = calc(acc, Number(cur), op);
+      acc = r; cur = isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Błąd";
+      if (cur === "Błąd") { acc = null; op = null; fresh = true; show(); return; }
+    } else {
+      acc = Number(cur);
+    }
+    op = o; fresh = true; show();
+  }
+  function eq() {
+    if (op === null || acc === null || cur === "Błąd") return;
+    var r = calc(acc, Number(cur), op);
+    cur = isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Błąd";
+    acc = null; op = null; fresh = true; show();
+  }
+  function clear() {
+    if (clr.textContent === "C" && !fresh && cur !== "0") { cur = "0"; fresh = true; }
+    else { cur = "0"; acc = null; op = null; fresh = true; }
+    show();
+  }
+  function sign() {
+    if (cur === "Błąd" || cur === "0") return;
+    cur = cur.charAt(0) === "-" ? cur.slice(1) : "-" + cur; show();
+  }
+  function percent() {
+    if (cur === "Błąd") return;
+    cur = String(parseFloat((Number(cur) / 100).toPrecision(12))); fresh = true; show();
+  }
+
+  document.getElementById("keys").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var a = b.dataset.a;
+    if (a === "num") num(b.dataset.v);
+    else if (a === "dot") dot();
+    else if (a === "op") setOp(b.dataset.v);
+    else if (a === "eq") eq();
+    else if (a === "clear") clear();
+    else if (a === "sign") sign();
+    else if (a === "percent") percent();
+    if (navigator.vibrate) navigator.vibrate(8);
+  });
+  show();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
