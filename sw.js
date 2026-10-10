@@ -1,6 +1,6 @@
-// Service worker: cache-first, działa offline.
+// Service worker: działa offline, po wgraniu nowej wersji aktualizuje się sam.
 // Przy każdej zmianie aplikacji podbij numer wersji poniżej.
-var CACHE = "kalkulator-v1";
+var CACHE = "kalkulator-v2";
 var FILES = [
   "./",
   "index.html",
@@ -11,7 +11,14 @@ var FILES = [
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
-    caches.open(CACHE).then(function (c) { return c.addAll(FILES); })
+    caches.open(CACHE).then(function (c) {
+      // cache: "reload" pomija pamięć podręczną przeglądarki, więc zawsze bierze świeże pliki
+      return Promise.all(FILES.map(function (f) {
+        return fetch(new Request(f, { cache: "reload" })).then(function (r) {
+          if (r.ok) return c.put(f, r);
+        });
+      }));
+    })
   );
   self.skipWaiting();
 });
@@ -28,7 +35,7 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then(function (hit) {
+    caches.match(e.request, { ignoreSearch: true }).then(function (hit) {
       return hit || fetch(e.request).then(function (res) {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(e.request, copy); });

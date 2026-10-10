@@ -2,163 +2,623 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c1c1e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Kalkulator</title>
+<title>Kalkulator czasu</title>
 <style>
-  :root { --bg:#1c1c1e; --key:#2c2c2e; --key2:#3a3a3c; --op:#ff9f0a; --txt:#fff; }
+  :root { --bg:#1c1c1e; --card:#2c2c2e; --card2:#3a3a3c; --line:#48484a; --txt:#f5f5f7; --mut:#9a9aa1;
+          --acc:#ff9f0a; --err:#ff6b6b; color-scheme:dark light; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f2f2f7; --card:#fff; --card2:#e9e9ee; --line:#d6d6dc; --txt:#111; --mut:#6c6c73; }
+  }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt);
-    font-family:system-ui,-apple-system,Roboto,sans-serif; overscroll-behavior:none; }
-  .app { height:100%; display:flex; flex-direction:column; padding:12px 12px max(12px,env(safe-area-inset-bottom)); max-width:480px; margin:0 auto; }
-  .display { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; padding:8px 12px 16px; overflow:hidden; }
-  .expr { font-size:20px; color:#8e8e93; min-height:26px; word-break:break-all; text-align:right; }
-  .value { font-size:72px; font-weight:300; line-height:1.1; white-space:nowrap; }
-  .keys { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-  button { border:0; border-radius:50%; aspect-ratio:1; font-size:30px; color:var(--txt);
-    background:var(--key); cursor:pointer; touch-action:manipulation; }
-  button:active { filter:brightness(1.4); }
-  button.fn { background:var(--key2); }
-  button.op { background:var(--op); }
-  button.op.active { background:#fff; color:var(--op); }
-  button.zero { grid-column:span 2; aspect-ratio:auto; border-radius:999px; text-align:left; padding-left:10%; }
+  [hidden] { display:none !important; }
+  html,body { margin:0; background:var(--bg); color:var(--txt);
+    font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif; }
+  .app { max-width:520px; margin:0 auto; padding:10px 12px calc(28px + env(safe-area-inset-bottom)); }
+  h1 { font-size:20px; font-weight:600; margin:6px 4px 8px; }
+  .tabs { display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:none;
+          position:sticky; top:0; background:var(--bg); z-index:5; }
+  .tabs::-webkit-scrollbar { display:none; }
+  button { font:inherit; touch-action:manipulation; cursor:pointer; }
+  .tab { flex:none; border:0; border-radius:999px; padding:9px 14px; background:var(--card); color:var(--txt); font-size:15px; }
+  .tab[aria-selected=true] { background:var(--acc); color:#000; font-weight:600; }
+  .card { background:var(--card); border-radius:16px; padding:14px; margin:0 0 12px; }
+  .card-h { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; font-weight:600; }
+  .row { display:flex; gap:8px; }
+  .f { flex:1; display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--mut); min-width:0; }
+  .f.w2 { flex:1.6; }
+  input[type=text], select { width:100%; background:var(--card2); border:1px solid transparent; border-radius:10px;
+    color:var(--txt); font:inherit; font-size:18px; padding:10px 6px; text-align:center; outline:none; }
+  select { text-align:left; padding:10px; }
+  input[type=text]:focus, select:focus { border-color:var(--acc); }
+  input:disabled { opacity:.55; }
+  .chk { display:flex; align-items:center; gap:8px; font-weight:400; font-size:14px; cursor:pointer; }
+  .chk input { width:22px; height:22px; accent-color:var(--acc); margin:0; flex:none; }
+  .seg { display:flex; background:var(--card2); border-radius:12px; padding:3px; gap:3px; }
+  .seg button { flex:1; border:0; border-radius:9px; padding:9px; background:transparent; color:var(--txt); font-size:16px; }
+  .seg button[aria-pressed=true] { background:var(--acc); color:#000; font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { border:0; border-radius:999px; padding:7px 12px; background:var(--card2); color:var(--txt); font-size:14px; }
+  .btn { border:0; border-radius:12px; padding:10px 14px; background:var(--card2); color:var(--txt); font-size:15px; }
+  .opts { display:flex; flex-direction:column; gap:12px; }
+  .res { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  .res .big { font-size:25px; font-weight:600; line-height:1.25; }
+  .res .sub { color:var(--mut); margin-top:4px; }
+  .kv { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-top:1px solid var(--line); }
+  .kv:first-of-type { margin-top:12px; }
+  .kv span { color:var(--mut); flex:none; }
+  .kv b { text-align:right; font-weight:600; }
+  .msg { color:var(--mut); }
+  .err { color:var(--err); }
+  .note { font-size:13px; color:var(--mut); margin:10px 2px 0; }
+  .srow { display:flex; gap:6px; align-items:center; margin-bottom:8px; }
+  .srow input { padding:10px 2px; font-size:17px; }
+  .srow .sgn, .srow .del { flex:none; width:40px; height:44px; border:0; border-radius:10px; background:var(--card2); color:var(--txt); font-size:22px; }
+  .srow .sgn[data-s="-1"] { color:var(--err); }
+  .mt { margin-top:12px; }
+  .mt8 { margin-top:8px; }
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="display">
-    <div class="expr" id="expr"></div>
-    <div class="value" id="value">0</div>
-  </div>
-  <div class="keys" id="keys">
-    <button class="fn" data-a="clear" id="clr">AC</button>
-    <button class="fn" data-a="sign">±</button>
-    <button class="fn" data-a="percent">%</button>
-    <button class="op" data-a="op" data-v="÷">÷</button>
-
-    <button data-a="num" data-v="7">7</button>
-    <button data-a="num" data-v="8">8</button>
-    <button data-a="num" data-v="9">9</button>
-    <button class="op" data-a="op" data-v="×">×</button>
-
-    <button data-a="num" data-v="4">4</button>
-    <button data-a="num" data-v="5">5</button>
-    <button data-a="num" data-v="6">6</button>
-    <button class="op" data-a="op" data-v="−">−</button>
-
-    <button data-a="num" data-v="1">1</button>
-    <button data-a="num" data-v="2">2</button>
-    <button data-a="num" data-v="3">3</button>
-    <button class="op" data-a="op" data-v="+">+</button>
-
-    <button class="zero" data-a="num" data-v="0">0</button>
-    <button data-a="dot">,</button>
-    <button class="op" data-a="eq">=</button>
-  </div>
+  <h1>Kalkulator czasu</h1>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div id="view"></div>
+  <div class="res" id="out" aria-live="polite"></div>
+  <p class="note">Obliczenia kalendarzowe, bez uwzględniania zmiany czasu letni/zimowy. Święta według kalendarza polskiego.</p>
 </div>
 
 <script>
 (function () {
-  var cur = "0";        // aktualnie wpisywana liczba (string)
-  var acc = null;       // wartość zapamiętana
-  var op = null;        // oczekujący operator
-  var fresh = true;     // następna cyfra zaczyna nową liczbę
-  var exprEl = document.getElementById("expr");
-  var valEl = document.getElementById("value");
-  var clr = document.getElementById("clr");
+'use strict';
 
-  function calc(a, b, o) {
-    switch (o) {
-      case "+": return a + b;
-      case "−": return a - b;
-      case "×": return a * b;
-      case "÷": return b === 0 ? NaN : a / b;
-    }
-    return b;
-  }
-  function fmt(s) {
-    if (s === "Błąd") return s;
-    var n = Number(s);
-    if (!isFinite(n)) return "Błąd";
-    var str = String(s);
-    if (str.indexOf("e") === -1 && str.length <= 12) return str.replace(".", ",");
-    return String(parseFloat(n.toPrecision(10))).replace(".", ",");
-  }
-  function show() {
-    valEl.textContent = fmt(cur);
-    var l = valEl.textContent.length;
-    valEl.style.fontSize = l > 12 ? "40px" : l > 9 ? "52px" : l > 6 ? "64px" : "72px";
-    exprEl.textContent = acc !== null && op ? fmt(String(acc)) + " " + op : "";
-    clr.textContent = (cur === "0" && acc === null) ? "AC" : "C";
-    document.querySelectorAll("button.op[data-a=op]").forEach(function (b) {
-      b.classList.toggle("active", fresh && op === b.dataset.v);
-    });
-  }
-  function num(d) {
-    if (cur === "Błąd") cur = "0";
-    if (fresh) { cur = d; fresh = false; }
-    else if (cur.replace(/[-.]/g, "").length < 12) cur = (cur === "0") ? d : cur + d;
-    show();
-  }
-  function dot() {
-    if (cur === "Błąd") cur = "0";
-    if (fresh) { cur = "0."; fresh = false; }
-    else if (cur.indexOf(".") === -1) cur += ".";
-    show();
-  }
-  function setOp(o) {
-    if (cur === "Błąd") return;
-    if (acc !== null && op && !fresh) {
-      var r = calc(acc, Number(cur), op);
-      acc = r; cur = isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Błąd";
-      if (cur === "Błąd") { acc = null; op = null; fresh = true; show(); return; }
-    } else {
-      acc = Number(cur);
-    }
-    op = o; fresh = true; show();
-  }
-  function eq() {
-    if (op === null || acc === null || cur === "Błąd") return;
-    var r = calc(acc, Number(cur), op);
-    cur = isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Błąd";
-    acc = null; op = null; fresh = true; show();
-  }
-  function clear() {
-    if (clr.textContent === "C" && !fresh && cur !== "0") { cur = "0"; fresh = true; }
-    else { cur = "0"; acc = null; op = null; fresh = true; }
-    show();
-  }
-  function sign() {
-    if (cur === "Błąd" || cur === "0") return;
-    cur = cur.charAt(0) === "-" ? cur.slice(1) : "-" + cur; show();
-  }
-  function percent() {
-    if (cur === "Błąd") return;
-    cur = String(parseFloat((Number(cur) / 100).toPrecision(12))); fresh = true; show();
-  }
+/* ---------- stałe i drobne pomocniki ---------- */
+var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
+var WD = ['niedziela','poniedziałek','wtorek','środa','czwartek','piątek','sobota'];
+var MON = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
+var U = { rok:['rok','lata','lat'], mies:['miesiąc','miesiące','miesięcy'], tydz:['tydzień','tygodnie','tygodni'],
+          dzien:['dzień','dni','dni'], godz:['godzina','godziny','godzin'], min:['minuta','minuty','minut'], sek:['sekunda','sekundy','sekund'] };
+var RANGE = 'Wynik wychodzi poza obsługiwany zakres lat (1000–9999).';
 
-  document.getElementById("keys").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
-    var a = b.dataset.a;
-    if (a === "num") num(b.dataset.v);
-    else if (a === "dot") dot();
-    else if (a === "op") setOp(b.dataset.v);
-    else if (a === "eq") eq();
-    else if (a === "clear") clear();
-    else if (a === "sign") sign();
-    else if (a === "percent") percent();
-    if (navigator.vibrate) navigator.vibrate(8);
+function $(s, r) { return (r || document).querySelector(s); }
+function el(t, c) { var e = document.createElement(t); if (c) e.className = c; return e; }
+function pad(n) { return String(n).padStart(2, '0'); }
+function fdiv(a, b) { return Math.floor(a / b); }
+function mod(a, b) { return ((a % b) + b) % b; }
+function pl(n, a) {
+  n = Math.abs(n);
+  if (n === 1) return a[0];
+  var m10 = n % 10, m100 = n % 100;
+  return (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) ? a[1] : a[2];
+}
+function nf(n, max) { return n.toLocaleString('pl-PL', { maximumFractionDigits: max == null ? 0 : max }); }
+function nfs(n) { return n.toLocaleString('pl-PL', { maximumSignificantDigits: 7 }); }
+function cnt(n, u) { return nf(n) + ' ' + pl(n, U[u]); }
+function daysText(x) { return Number.isInteger(x) ? cnt(x, 'dzien') : nf(x, 2) + ' dnia'; }
+function joinPl(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' i ' + a[a.length - 1] : a[0]; }
+function kv(a, b) { return '<div class="kv"><span>' + a + '</span><b>' + b + '</b></div>'; }
+function msg(t) { return '<div class="msg">' + t + '</div>'; }
+function errm(t) { return '<div class="err">' + t + '</div>'; }
+
+/* ---------- daty (liczone w UTC jako „czas kalendarzowy”) ---------- */
+function utc(y, m, d, h, mi) {
+  var t = new Date(0); t.setUTCFullYear(y, m - 1, d); t.setUTCHours(h || 0, mi || 0, 0, 0); return t.getTime();
+}
+function parts(ts) {
+  var t = new Date(ts);
+  return { y:t.getUTCFullYear(), m:t.getUTCMonth() + 1, d:t.getUTCDate(), h:t.getUTCHours(), mi:t.getUTCMinutes(), wd:t.getUTCDay() };
+}
+function leap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+function dim(y, m) { return [31, leap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]; }
+function today() { var n = new Date(); return { y:n.getFullYear(), m:n.getMonth() + 1, d:n.getDate(), h:n.getHours(), mi:n.getMinutes() }; }
+function todayTs() { var n = today(); return utc(n.y, n.m, n.d); }
+function dayStart(ts) { return fdiv(ts, DAY) * DAY; }
+
+function addMonths(ts, n) {
+  var p = parts(ts), tot = p.y * 12 + (p.m - 1) + n;
+  var ny = fdiv(tot, 12), nm = mod(tot, 12) + 1;
+  if (ny < 1000 || ny > 9999) return null;
+  var nd = Math.min(p.d, dim(ny, nm));
+  return { ts: utc(ny, nm, nd, p.h, p.mi), clamped: nd < p.d };
+}
+function inRange(ts) { var y = parts(ts).y; return y >= 1000 && y <= 9999; }
+
+function fmtDate(ts, withTime) {
+  var p = parts(ts);
+  var s = WD[p.wd] + ', ' + p.d + ' ' + MON[p.m - 1] + ' ' + p.y;
+  return withTime ? s + ', ' + pad(p.h) + ':' + pad(p.mi) : s;
+}
+function fmtShort(ts, withTime) {
+  var p = parts(ts);
+  var s = pad(p.d) + '.' + pad(p.m) + '.' + p.y;
+  return withTime ? s + ' ' + pad(p.h) + ':' + pad(p.mi) : s;
+}
+function isoWeek(ts) {
+  var d = new Date(ts); d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  var y0 = new Date(d); y0.setUTCMonth(0, 1);
+  return Math.ceil(((d - y0) / DAY + 1) / 7);
+}
+function dayOfYear(ts) { var p = parts(ts); return (dayStart(ts) - utc(p.y, 1, 1)) / DAY + 1; }
+
+/* rozbicie różnicy dwóch momentów (a <= b) na lata, miesiące, dni, godziny, minuty */
+function breakdown(a, b) {
+  var pa = parts(a), pb = parts(b);
+  var tot = (pb.y - pa.y) * 12 + (pb.m - pa.m), r;
+  while (tot > 0) { r = addMonths(a, tot); if (r && r.ts <= b) break; tot--; }
+  var base = tot > 0 ? addMonths(a, tot).ts : a;
+  var rem = b - base, days = Math.floor(rem / DAY); rem -= days * DAY;
+  return { years:Math.floor(tot / 12), months:tot % 12, totalMonths:tot, days:days,
+           hours:Math.floor(rem / HOUR), minutes:Math.round((rem % HOUR) / MIN) };
+}
+function fmtBreak(b, withT) {
+  var a = [];
+  if (b.years) a.push(cnt(b.years, 'rok'));
+  if (b.months) a.push(cnt(b.months, 'mies'));
+  if (b.days) a.push(cnt(b.days, 'dzien'));
+  if (withT) { if (b.hours) a.push(cnt(b.hours, 'godz')); if (b.minutes) a.push(cnt(b.minutes, 'min')); }
+  return a.length ? joinPl(a) : (withT ? '0 minut' : '0 dni');
+}
+function rel(ts) {
+  var d = Math.round((dayStart(ts) - todayTs()) / DAY);
+  if (d === 0) return 'dzisiaj';
+  if (d === 1) return 'jutro';
+  if (d === -1) return 'wczoraj';
+  return d > 0 ? 'za ' + cnt(d, 'dzien') : cnt(-d, 'dzien') + ' temu';
+}
+function relLong(ts) {
+  var t0 = todayTs(), t1 = dayStart(ts);
+  if (t0 === t1) return 'dzisiaj';
+  if (t1 > t0) return 'za ' + fmtBreak(breakdown(t0, t1));
+  return fmtBreak(breakdown(t1, t0)) + ' temu';
+}
+
+/* ---------- polskie święta ---------- */
+var hcache = {};
+function easter(y) {
+  var a = y % 19, b = fdiv(y, 100), c = y % 100, d = fdiv(b, 4), e = b % 4, f = fdiv(b + 8, 25), g = fdiv(b - f + 1, 3);
+  var h = (19 * a + b - d - g + 15) % 30, i = fdiv(c, 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  var m = fdiv(a + 11 * h + 22 * l, 451);
+  return { m: fdiv(h + l - 7 * m + 114, 31), d: ((h + l - 7 * m + 114) % 31) + 1 };
+}
+function holidays(y) {
+  if (hcache[y]) return hcache[y];
+  var ea = easter(y), e = utc(y, ea.m, ea.d) / DAY;
+  var list = [
+    [utc(y, 1, 1) / DAY, 'Nowy Rok'], [utc(y, 1, 6) / DAY, 'Trzech Króli'], [e, 'Wielkanoc'],
+    [e + 1, 'Poniedziałek Wielkanocny'], [utc(y, 5, 1) / DAY, 'Święto Pracy'],
+    [utc(y, 5, 3) / DAY, 'Święto Konstytucji 3 Maja'], [e + 49, 'Zielone Świątki'], [e + 60, 'Boże Ciało'],
+    [utc(y, 8, 15) / DAY, 'Wniebowzięcie NMP'], [utc(y, 11, 1) / DAY, 'Wszystkich Świętych'],
+    [utc(y, 11, 11) / DAY, 'Święto Niepodległości'], [utc(y, 12, 25) / DAY, 'Boże Narodzenie'],
+    [utc(y, 12, 26) / DAY, 'Drugi dzień Bożego Narodzenia']
+  ];
+  if (y >= 2025) list.push([utc(y, 12, 24) / DAY, 'Wigilia']);
+  var map = {}; list.forEach(function (x) { map[x[0]] = x[1]; });
+  return (hcache[y] = { list: list, map: map });
+}
+function wdIdx(i) { return mod(i + 4, 7); } // 0 = niedziela (1.01.1970 to czwartek)
+function yearOfIdx(i) { return new Date(i * DAY).getUTCFullYear(); }
+
+/* liczy dni w przedziale [s, e) podanym jako numery dni */
+function countRange(s, e) {
+  var wk = 0, we = 0, hol = 0, i, w;
+  for (i = s; i < e; i++) { w = wdIdx(i); if (w === 0 || w === 6) we++; else wk++; }
+  if (e > s) {
+    for (var y = yearOfIdx(s); y <= yearOfIdx(e - 1); y++) {
+      holidays(y).list.forEach(function (h) {
+        if (h[0] >= s && h[0] < e) { var x = wdIdx(h[0]); if (x !== 0 && x !== 6) hol++; }
+      });
+    }
+  }
+  return { total: Math.max(0, e - s), wk: wk, we: we, hol: hol };
+}
+
+/* ---------- pole daty (dzień / miesiąc / rok, opcjonalnie godzina) ---------- */
+function dateField(title, o) {
+  o = o || {};
+  var root = el('div', 'card');
+  root.innerHTML =
+    '<div class="card-h"><span class="ttl"></span><label class="chk"' + (o.noToday ? ' hidden' : '') +
+    '><input type="checkbox" class="today"><span>' + (o.todayLabel || 'Dzisiejsza data') + '</span></label></div>' +
+    '<div class="row">' +
+    '<label class="f"><span>Dzień</span><input type="text" class="fd" data-num="int" inputmode="numeric" maxlength="2" placeholder="DD" autocomplete="off"></label>' +
+    '<label class="f"><span>Miesiąc</span><input type="text" class="fm" data-num="int" inputmode="numeric" maxlength="2" placeholder="MM" autocomplete="off"></label>' +
+    '<label class="f w2"><span>Rok</span><input type="text" class="fy" data-num="int" inputmode="numeric" maxlength="4" placeholder="RRRR" autocomplete="off"></label>' +
+    '</div>' +
+    '<div class="row tm mt8" hidden>' +
+    '<label class="f"><span>Godzina</span><input type="text" class="fh" data-num="int" inputmode="numeric" maxlength="2" placeholder="gg" autocomplete="off"></label>' +
+    '<label class="f"><span>Minuta</span><input type="text" class="fi" data-num="int" inputmode="numeric" maxlength="2" placeholder="mm" autocomplete="off"></label>' +
+    '<div class="f w2"></div></div>';
+  $('.ttl', root).textContent = title;
+  var D = $('.fd', root), M = $('.fm', root), Y = $('.fy', root), H = $('.fh', root), I = $('.fi', root);
+  var T = $('.today', root), TM = $('.tm', root), showT = false;
+
+  function lock() { [D, M, Y, H, I].forEach(function (x) { x.disabled = T.checked; }); }
+  function fill(n) {
+    D.value = n.d; M.value = n.m; Y.value = n.y;
+    if (showT) { H.value = pad(n.h); I.value = pad(n.mi); }
+  }
+  T.addEventListener('change', function () { lock(); if (T.checked) fill(today()); });
+  root.addEventListener('focusin', function (e) {
+    if (e.target.matches('input[type=text]')) setTimeout(function () { e.target.select(); }, 0);
   });
-  show();
+  root.addEventListener('input', function (e) {
+    var t = e.target, v = t.value;
+    if (t === D && (v.length === 2 || (v.length === 1 && +v > 3))) M.focus();
+    else if (t === M && (v.length === 2 || (v.length === 1 && +v > 1))) Y.focus();
+    else if (t === Y && v.length === 4 && showT) H.focus();
+    else if (t === H && (v.length === 2 || (v.length === 1 && +v > 2))) I.focus();
+  });
 
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () {});
-    });
+  function read() {
+    var y, m, d, h = 0, mi = 0;
+    if (T.checked) {
+      var n = today(); y = n.y; m = n.m; d = n.d;
+      if (showT) { h = n.h; mi = n.mi; }
+      fill(n);
+    } else {
+      if (D.value === '' || M.value === '' || Y.value.length < 4) return { st: 'incomplete' };
+      d = +D.value; m = +M.value; y = +Y.value;
+      if (y < 1000) return { st: 'invalid', err: title + ': rok musi być w zakresie 1000–9999.' };
+      if (m < 1 || m > 12) return { st: 'invalid', err: title + ': miesiąc musi być od 1 do 12.' };
+      if (d < 1) return { st: 'invalid', err: title + ': dzień musi być co najmniej 1.' };
+      if (d > dim(y, m)) return { st: 'invalid', err: title + ': w tym miesiącu jest tylko ' + dim(y, m) + ' dni.' };
+      if (showT) {
+        h = H.value === '' ? 0 : +H.value; mi = I.value === '' ? 0 : +I.value;
+        if (h > 23 || mi > 59) return { st: 'invalid', err: title + ': godzina musi być z zakresu 00:00–23:59.' };
+      }
+    }
+    return { st: 'ok', y: y, m: m, d: d, h: h, mi: mi, ts: utc(y, m, d, h, mi) };
   }
+  function showTime(b) { showT = b; TM.hidden = !b; if (T.checked) fill(today()); }
+  function get() { return { t: T.checked, d: D.value, m: M.value, y: Y.value, h: H.value, i: I.value }; }
+  function set(s) { T.checked = s.t; D.value = s.d; M.value = s.m; Y.value = s.y; H.value = s.h; I.value = s.i; lock(); }
+
+  if (o.today) { T.checked = true; lock(); fill(today()); }
+  return { root: root, read: read, showTime: showTime, get: get, set: set };
+}
+
+function nfld(c, label, ph) {
+  return '<label class="f"><span>' + label + '</span><input type="text" class="' + c +
+    '" data-num="int" inputmode="numeric" maxlength="6" placeholder="' + (ph || '0') + '" autocomplete="off"></label>';
+}
+function rd(root, c) { var v = $('.' + c, root).value; return v === '' ? 0 : parseInt(v, 10); }
+function segVal(root) { return +$('.seg [aria-pressed=true]', root).dataset.v; }
+function segHtml(a, b) {
+  return '<div class="seg"><button data-v="1" aria-pressed="true">' + a + '</button><button data-v="-1" aria-pressed="false">' + b + '</button></div>';
+}
+function chkHtml(c, label, checked) {
+  return '<label class="chk"><input type="checkbox" class="' + c + '"' + (checked ? ' checked' : '') + '><span>' + label + '</span></label>';
+}
+
+/* =====================================================
+   TRYB 1: dodaj / odejmij czas od daty
+   ===================================================== */
+function buildAdd(v, out) {
+  var f = dateField('Data początkowa'); v.appendChild(f.root);
+  var c = el('div', 'card');
+  c.innerHTML =
+    '<div class="card-h"><span>Co dodać lub odjąć?</span></div>' + segHtml('+ Dodaj', '− Odejmij') +
+    '<div class="row mt">' + nfld('y', 'Lata') + nfld('mo', 'Miesiące') + nfld('w', 'Tygodnie') + '</div>' +
+    '<div class="row mt8">' + nfld('d', 'Dni') + nfld('h', 'Godziny') + nfld('mi', 'Minuty') + '</div>' +
+    '<div class="chips mt">' +
+    '<button class="chip" data-p=\'{"d":1}\'>1 dzień</button><button class="chip" data-p=\'{"d":7}\'>7 dni</button>' +
+    '<button class="chip" data-p=\'{"d":30}\'>30 dni</button><button class="chip" data-p=\'{"mo":1}\'>1 miesiąc</button>' +
+    '<button class="chip" data-p=\'{"mo":3}\'>3 miesiące</button><button class="chip" data-p=\'{"mo":6}\'>6 miesięcy</button>' +
+    '<button class="chip" data-p=\'{"y":1}\'>1 rok</button><button class="chip" data-p=\'{}\'>Wyczyść</button></div>' +
+    '<div class="mt">' + chkHtml('wt', 'Uwzględnij godzinę') + '</div>';
+  v.appendChild(c);
+  var wt = $('.wt', c);
+  c.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-p]'); if (!b) return;
+    var p = JSON.parse(b.dataset.p);
+    ['y', 'mo', 'w', 'd', 'h', 'mi'].forEach(function (k) { $('.' + k, c).value = p[k] ? p[k] : ''; });
+    recalc();
+  });
+  function recalc() {
+    f.showTime(wt.checked);
+    var s = f.read();
+    if (s.st === 'incomplete') { out.innerHTML = msg('Wpisz datę początkową albo zaznacz „Dzisiejsza data”.'); return; }
+    if (s.st === 'invalid') { out.innerHTML = errm(s.err); return; }
+    var sg = segVal(c), y = rd(c, 'y'), mo = rd(c, 'mo'), w = rd(c, 'w'), d = rd(c, 'd'), h = rd(c, 'h'), mi = rd(c, 'mi');
+    var r = addMonths(s.ts, sg * (y * 12 + mo));
+    if (!r) { out.innerHTML = errm(RANGE); return; }
+    var ts = r.ts + sg * ((w * 7 + d) * DAY + h * HOUR + mi * MIN);
+    if (!inRange(ts)) { out.innerHTML = errm(RANGE); return; }
+    var p = parts(ts), showT = wt.checked || h > 0 || mi > 0;
+    var diff = Math.abs(ts - s.ts) / DAY;
+    out.innerHTML =
+      '<div class="big">' + fmtDate(ts, false) + '</div>' +
+      '<div class="sub">' + (showT ? 'godz. ' + pad(p.h) + ':' + pad(p.mi) + ' · ' : '') + rel(ts) + '</div>' +
+      kv('Od dziś', relLong(ts)) +
+      kv('Od daty początkowej', (sg > 0 ? '+ ' : '− ') + daysText(diff)) +
+      kv('Tydzień roku (ISO)', isoWeek(ts)) +
+      kv('Dzień roku', dayOfYear(ts) + ' z ' + (leap(p.y) ? 366 : 365)) +
+      (r.clamped ? '<div class="note">Miesiąc docelowy ma mniej dni, więc dzień przesunięto na jego ostatni dzień.</div>' : '');
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB 2: różnica między datami
+   ===================================================== */
+function buildDiff(v, out) {
+  var A = dateField('Od', { todayLabel: 'Dziś' }), B = dateField('Do', { todayLabel: 'Dziś' });
+  v.appendChild(A.root); v.appendChild(B.root);
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="opts">' + chkHtml('wt', 'Uwzględnij godziny') +
+    '<div class="incl">' + chkHtml('inc', 'Wlicz dzień końcowy (np. 1–3 stycznia = 3 dni)') + '</div>' +
+    '<button class="btn swap">⇅ Zamień daty miejscami</button></div>';
+  v.appendChild(c);
+  var wt = $('.wt', c), inc = $('.inc', c);
+  $('.swap', c).addEventListener('click', function () {
+    var a = A.get(); A.set(B.get()); B.set(a); recalc();
+  });
+  function recalc() {
+    A.showTime(wt.checked); B.showTime(wt.checked);
+    $('.incl', c).hidden = wt.checked;
+    var a = A.read(), b = B.read();
+    if (a.st === 'incomplete' || b.st === 'incomplete') { out.innerHTML = msg('Uzupełnij obie daty albo zaznacz „Dziś”.'); return; }
+    if (a.st === 'invalid') { out.innerHTML = errm(a.err); return; }
+    if (b.st === 'invalid') { out.innerHTML = errm(b.err); return; }
+    var t = wt.checked, swapped = false, s = a.ts, e = b.ts;
+    if (s > e) { var x = s; s = e; e = x; swapped = true; }
+    var e2 = (!t && inc.checked) ? e + DAY : e;
+    var bk = breakdown(s, e2), ms = e2 - s;
+    var html = '<div class="big">' + fmtBreak(bk, t) + '</div>' +
+      '<div class="sub">' + fmtShort(s, t) + ' → ' + fmtShort(e, t) + (swapped ? ' (daty były w odwrotnej kolejności)' : '') + '</div>';
+    html += kv('Razem dni', t ? nf(ms / DAY, 2) : nf(ms / DAY));
+    var wholeDays = Math.floor(ms / DAY);
+    if (wholeDays >= 7) html += kv('Tygodnie i dni', cnt(Math.floor(wholeDays / 7), 'tydz') + (wholeDays % 7 ? ' i ' + cnt(wholeDays % 7, 'dzien') : ''));
+    if (bk.totalMonths > 0) html += kv('Pełne miesiące', nf(bk.totalMonths));
+    html += kv('Razem godzin', nf(ms / HOUR, 2)) + kv('Razem minut', nf(ms / MIN));
+    if (!t) {
+      var cr = countRange(fdiv(s, DAY), fdiv(e2, DAY));
+      html += kv('Dni robocze (pon.–pt.)', nf(cr.wk)) + kv('…bez polskich świąt', nf(cr.wk - cr.hol)) +
+              kv('Dni weekendowe', nf(cr.we));
+    }
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB 3: dodaj / odejmij dni robocze
+   ===================================================== */
+function buildWork(v, out) {
+  var f = dateField('Data początkowa'); v.appendChild(f.root);
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Ile dni roboczych?</span></div>' + segHtml('+ Dodaj', '− Odejmij') +
+    '<div class="row mt">' + nfld('n', 'Liczba dni roboczych') + '</div>' +
+    '<div class="opts mt">' + chkHtml('hol', 'Pomijaj polskie święta', true) + chkHtml('sat', 'Sobota jest dniem roboczym') + '</div>';
+  v.appendChild(c);
+  function recalc() {
+    var s = f.read();
+    if (s.st === 'incomplete') { out.innerHTML = msg('Wpisz datę początkową albo zaznacz „Dzisiejsza data”.'); return; }
+    if (s.st === 'invalid') { out.innerHTML = errm(s.err); return; }
+    var sg = segVal(c), n = rd(c, 'n'), skipHol = $('.hol', c).checked, sat = $('.sat', c).checked;
+    var start = fdiv(s.ts, DAY), idx = start, left = n, skipped = [];
+    while (left > 0) {
+      idx += sg;
+      var y = yearOfIdx(idx);
+      if (y < 1000 || y > 9999) { out.innerHTML = errm(RANGE); return; }
+      var w = wdIdx(idx), dayOk = !(w === 0 || (w === 6 && !sat)), name = holidays(y).map[idx];
+      if (dayOk && skipHol && name) { skipped.push({ idx: idx, name: name }); continue; }
+      if (dayOk) left--;
+    }
+    var ts = idx * DAY;
+    var html = '<div class="big">' + fmtDate(ts) + '</div><div class="sub">' + rel(ts) + '</div>' +
+      kv('Dni kalendarzowe', (sg > 0 ? '+ ' : '− ') + cnt(Math.abs(idx - start), 'dzien')) +
+      kv('Tydzień roku (ISO)', isoWeek(ts));
+    if (skipped.length) {
+      html += '<div class="note">Pominięte święta (' + skipped.length + '): ' +
+        skipped.slice(0, 10).map(function (h) { var p = parts(h.idx * DAY); return p.d + ' ' + MON[p.m - 1] + ' ' + p.y + ' – ' + h.name; }).join('; ') +
+        (skipped.length > 10 ? '; …' : '') + '.</div>';
+    }
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB 4: wiek i urodziny
+   ===================================================== */
+function buildAge(v, out) {
+  var B = dateField('Data urodzenia', { noToday: true });
+  var R = dateField('Na dzień', { todayLabel: 'Dziś', today: true });
+  v.appendChild(B.root); v.appendChild(R.root);
+  function recalc() {
+    var b = B.read(), r = R.read();
+    if (b.st === 'incomplete') { out.innerHTML = msg('Wpisz datę urodzenia (albo dowolną datę, od której liczysz).'); return; }
+    if (b.st === 'invalid') { out.innerHTML = errm(b.err); return; }
+    if (r.st === 'incomplete') { out.innerHTML = msg('Uzupełnij datę „Na dzień” albo zaznacz „Dziś”.'); return; }
+    if (r.st === 'invalid') { out.innerHTML = errm(r.err); return; }
+    if (b.ts > r.ts) { out.innerHTML = errm('Data początkowa jest późniejsza niż data „Na dzień”.'); return; }
+    var bk = breakdown(b.ts, r.ts), days = (r.ts - b.ts) / DAY, nb = null;
+    for (var k = r.y - b.y; k <= r.y - b.y + 1; k++) {
+      var cd = addMonths(b.ts, 12 * k);
+      if (cd && cd.ts >= r.ts) { nb = { ts: cd.ts, age: k }; break; }
+    }
+    var html = '<div class="big">' + fmtBreak(bk) + '</div><div class="sub">' + fmtShort(b.ts) + ' → ' + fmtShort(r.ts) + '</div>' +
+      kv('Dni', nf(days)) +
+      kv('Tygodnie', cnt(Math.floor(days / 7), 'tydz') + (days % 7 ? ' i ' + cnt(days % 7, 'dzien') : '')) +
+      kv('Godziny', nf(days * 24)) +
+      kv('Dzień tygodnia początku', WD[parts(b.ts).wd]);
+    if (nb) {
+      var left = (nb.ts - r.ts) / DAY;
+      html += kv('Następna rocznica', fmtDate(nb.ts)) +
+        kv('Za ile', left === 0 ? 'dzisiaj' : cnt(left, 'dzien')) +
+        kv('Będzie to', cnt(nb.age, 'rok'));
+    }
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB 5: sumator czasu trwania
+   ===================================================== */
+function buildSum(v, out) {
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Czasy do zsumowania</span></div><div class="rows"></div>' +
+    '<button class="btn add">+ Dodaj wiersz</button>' +
+    '<p class="note">Znak przy wierszu zmienia dodawanie (+) na odejmowanie (−).</p>';
+  var c2 = el('div', 'card');
+  c2.innerHTML = '<div class="card-h"><span>Godzina początkowa (opcjonalnie)</span></div><div class="row">' +
+    nfld('sth', 'Godzina', 'gg').replace('maxlength="6"', 'maxlength="2"') +
+    nfld('stm', 'Minuta', 'mm').replace('maxlength="6"', 'maxlength="2"') + '<div class="f w2"></div></div>';
+  v.appendChild(c); v.appendChild(c2);
+  var rows = $('.rows', c);
+  function sf(cls, ph) {
+    return '<input type="text" class="' + cls + '" data-num="int" inputmode="numeric" maxlength="6" placeholder="' + ph + '" aria-label="' + ph + '" autocomplete="off">';
+  }
+  function addRow() {
+    var r = el('div', 'srow');
+    r.innerHTML = '<button class="sgn" data-s="1" aria-label="Zmień znak">+</button>' +
+      sf('sd', 'dni') + sf('sh', 'godz') + sf('sm', 'min') + sf('ss', 'sek') + '<button class="del" aria-label="Usuń wiersz">×</button>';
+    rows.appendChild(r);
+  }
+  addRow(); addRow();
+  c.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.closest('.add')) { addRow(); recalc(); return; }
+    var g = t.closest('.sgn');
+    if (g) { var neg = g.dataset.s === '1'; g.dataset.s = neg ? '-1' : '1'; g.textContent = neg ? '−' : '+'; recalc(); return; }
+    var d = t.closest('.del');
+    if (d) {
+      var r = d.parentNode;
+      if (rows.children.length > 1) r.remove();
+      else r.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+      recalc();
+    }
+  });
+  function durText(sec) {
+    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60, a = [];
+    if (d) a.push(cnt(d, 'dzien')); if (h) a.push(cnt(h, 'godz')); if (m) a.push(cnt(m, 'min')); if (s) a.push(cnt(s, 'sek'));
+    return a.length ? joinPl(a) : '0 minut';
+  }
+  function recalc() {
+    var total = 0, any = false;
+    rows.querySelectorAll('.srow').forEach(function (r) {
+      var sg = +$('.sgn', r).dataset.s, vals = ['sd', 'sh', 'sm', 'ss'].map(function (k) {
+        var x = $('.' + k, r).value; if (x !== '') any = true; return x === '' ? 0 : parseInt(x, 10);
+      });
+      total += sg * (vals[0] * 86400 + vals[1] * 3600 + vals[2] * 60 + vals[3]);
+    });
+    if (!any) { out.innerHTML = msg('Wpisz czasy do zsumowania.'); return; }
+    var ab = Math.abs(total), neg = total < 0;
+    var hh = Math.floor(ab / 3600), mm = Math.floor(ab % 3600 / 60), ss = ab % 60;
+    var html = '<div class="big">' + (neg ? '− ' : '') + durText(ab) + '</div>' +
+      kv('Format gg:mm:ss', (neg ? '−' : '') + hh + ':' + pad(mm) + ':' + pad(ss)) +
+      kv('Razem godzin', (neg ? '−' : '') + nf(ab / 3600, 4)) +
+      kv('Razem minut', (neg ? '−' : '') + nf(ab / 60, 2)) +
+      kv('Razem sekund', (neg ? '−' : '') + nf(ab)) +
+      kv('Razem dni', (neg ? '−' : '') + nf(ab / 86400, 4));
+    var sh = $('.sth', c2).value, sm = $('.stm', c2).value;
+    if (sh !== '' || sm !== '') {
+      var H0 = sh === '' ? 0 : +sh, M0 = sm === '' ? 0 : +sm;
+      if (H0 > 23 || M0 > 59) { html += '<div class="note err">Godzina początkowa musi być z zakresu 00:00–23:59.</div>'; }
+      else {
+        var tot = H0 * 3600 + M0 * 60 + total, off = Math.floor(tot / 86400), cl = mod(tot, 86400);
+        var clock = pad(Math.floor(cl / 3600)) + ':' + pad(Math.floor(cl % 3600 / 60)) + (cl % 60 ? ':' + pad(cl % 60) : '');
+        var when = off === 0 ? 'tego samego dnia' : off === 1 ? 'następnego dnia' : off === -1 ? 'poprzedniego dnia' :
+          off > 0 ? 'za ' + cnt(off, 'dzien') : cnt(-off, 'dzien') + ' wcześniej';
+        html += kv('Godzina po zmianie', clock + ' (' + when + ')');
+      }
+    }
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB 6: konwerter jednostek czasu
+   ===================================================== */
+function buildConv(v, out) {
+  var units = [['sekundy', 1], ['minuty', 60], ['godziny', 3600], ['dni', 86400], ['tygodnie', 604800],
+               ['miesiące (średnio)', 2629800], ['lata (średnio)', 31557600]];
+  var c = el('div', 'card');
+  c.innerHTML = '<div class="card-h"><span>Przelicz</span></div><div class="row">' +
+    '<label class="f"><span>Wartość</span><input type="text" class="val" data-num="dec" inputmode="decimal" placeholder="0" autocomplete="off"></label>' +
+    '<label class="f w2"><span>Jednostka</span><select class="un">' +
+    units.map(function (u, i) { return '<option value="' + i + '"' + (i === 3 ? ' selected' : '') + '>' + u[0] + '</option>'; }).join('') +
+    '</select></label></div>';
+  v.appendChild(c);
+  function recalc() {
+    var raw = $('.val', c).value;
+    if (raw === '' || raw === ',') { out.innerHTML = msg('Wpisz wartość do przeliczenia.'); return; }
+    var x = parseFloat(raw.replace(',', '.')), i = +$('.un', c).value;
+    if (!isFinite(x)) { out.innerHTML = errm('Nieprawidłowa liczba.'); return; }
+    var sec = x * units[i][1];
+    out.innerHTML = '<div class="big">' + nfs(x) + ' ' + units[i][0] + '</div>' +
+      units.map(function (u, j) { return j === i ? '' : kv(u[0], nfs(sec / u[1])); }).join('') +
+      '<div class="note">Miesiąc = 30,4375 dnia, rok = 365,25 dnia (wartości średnie).</div>';
+  }
+  return recalc;
+}
+
+/* ---------- zakładki i obsługa zdarzeń ---------- */
+var modes = [
+  { name: 'Dodaj / odejmij', build: buildAdd },
+  { name: 'Różnica dat', build: buildDiff },
+  { name: 'Dni robocze', build: buildWork },
+  { name: 'Wiek', build: buildAge },
+  { name: 'Sumator czasu', build: buildSum },
+  { name: 'Konwerter', build: buildConv }
+];
+var tabsEl = $('#tabs'), view = $('#view'), out = $('#out'), recalcCur = function () {};
+
+function show(i) {
+  Array.prototype.forEach.call(tabsEl.children, function (b, k) { b.setAttribute('aria-selected', k === i); });
+  view.innerHTML = ''; out.innerHTML = '';
+  recalcCur = modes[i].build(view, out);
+  recalcCur();
+  try { localStorage.setItem('kt-tab', String(i)); } catch (e) {}
+}
+modes.forEach(function (m, i) {
+  var b = el('button', 'tab'); b.textContent = m.name; b.setAttribute('role', 'tab');
+  b.addEventListener('click', function () { show(i); window.scrollTo(0, 0); });
+  tabsEl.appendChild(b);
+});
+
+/* filtr znaków w polach liczbowych (faza przechwytywania, działa przed resztą) */
+document.addEventListener('input', function (e) {
+  var t = e.target;
+  if (!t.dataset || !t.dataset.num) return;
+  if (t.dataset.num === 'int') t.value = t.value.replace(/\D/g, '');
+  else {
+    var s = t.value.replace('.', ',').replace(/[^\d,]/g, ''), k = s.indexOf(',');
+    if (k >= 0) s = s.slice(0, k + 1) + s.slice(k + 1).replace(/,/g, '');
+    t.value = s;
+  }
+}, true);
+view.addEventListener('input', function () { recalcCur(); });
+view.addEventListener('change', function () { recalcCur(); });
+view.addEventListener('click', function (e) {
+  var b = e.target.closest('.seg button'); if (!b) return;
+  Array.prototype.forEach.call(b.parentNode.children, function (x) { x.setAttribute('aria-pressed', x === b); });
+  recalcCur();
+});
+document.addEventListener('visibilitychange', function () { if (!document.hidden) recalcCur(); });
+
+var start = 0;
+try { var sv = parseInt(localStorage.getItem('kt-tab'), 10); if (sv >= 0 && sv < modes.length) start = sv; } catch (e) {}
+show(start);
+
+/* ---------- offline + automatyczna aktualizacja ---------- */
+if ('serviceWorker' in navigator) {
+  var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 })();
 </script>
 </body>
