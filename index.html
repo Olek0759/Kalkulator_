@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1c1c1e">
+<meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -20,7 +21,7 @@
     font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif; }
   body.open { overflow:hidden; }
   button { font:inherit; touch-action:manipulation; cursor:pointer; }
-  .app { max-width:520px; margin:0 auto; padding:0 12px calc(28px + env(safe-area-inset-bottom)); }
+  .app { zoom:var(--zoom,1); max-width:520px; margin:0 auto; padding:0 12px calc(28px + env(safe-area-inset-bottom)); }
 
   /* pasek górny + menu boczne */
   .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:10px 0; background:var(--bg); }
@@ -87,13 +88,34 @@
   .srow .sgn[data-s="-1"] { color:var(--err); }
   .mt { margin-top:12px; }
   .mt8 { margin-top:8px; }
-  .sw { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-  .swc { aspect-ratio:1; border-radius:50%; border:3px solid transparent; box-shadow:inset 0 0 0 2px rgba(0,0,0,.25); }
+  .sw { display:grid; grid-template-columns:repeat(4,56px); justify-content:space-between; gap:14px 10px; }
+  .swc { width:56px; height:56px; border-radius:50%; border:3px solid transparent; box-shadow:inset 0 0 0 2px rgba(0,0,0,.25); }
   .swc[aria-pressed=true] { border-color:var(--txt); }
   input[type=color] { width:46px; height:36px; border:0; padding:0; background:none; }
   .toast { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translate(-50%,20px); background:var(--card2); color:var(--txt);
            padding:10px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; z-index:60; box-shadow:0 4px 20px rgba(0,0,0,.35); }
   .toast.show { opacity:1; transform:translate(-50%,0); }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .tile { border:0; border-radius:16px; background:var(--card); color:var(--txt); padding:14px 12px; text-align:left; display:flex; flex-direction:column; gap:4px; }
+  .tile:active, .ditem:active { background:var(--card2); }
+  .tile .ic { font-size:24px; }
+  .tile b { font-size:15px; font-weight:600; }
+  .tile small { color:var(--mut); font-size:12px; line-height:1.3; }
+  .bar { height:8px; border-radius:99px; background:var(--card2); overflow:hidden; margin:12px 0 6px; }
+  .bar i { display:block; height:100%; background:var(--acc); border-radius:99px; }
+  .wdbars { display:flex; gap:6px; align-items:flex-end; margin-top:8px; }
+  .wdbars div { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:3px; font-size:11px; color:var(--mut); }
+  .wdbars i { display:block; width:100%; background:var(--acc); border-radius:4px 4px 0 0; }
+  input.txt { text-align:left; padding:10px 12px; }
+  .cdrow { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
+  .cdrow .nm { flex:1; min-width:0; }
+  .cdrow .nm b { display:block; overflow-wrap:anywhere; }
+  .cdrow .nm span { color:var(--mut); font-size:13px; }
+  .cdrow .days { font-weight:600; color:var(--acc); text-align:right; }
+  .cdrow .days.past { color:var(--mut); }
+  .cdrow .days small { display:block; font-weight:400; color:var(--mut); font-size:12px; }
+  .xbtn { flex:none; width:40px; height:40px; border:0; border-radius:10px; background:var(--card2); color:var(--txt); font-size:22px; }
+  details .kv:first-of-type { border-top:1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -120,7 +142,7 @@
 (function () {
 'use strict';
 
-var APP_VERSION = '3';
+var APP_VERSION = '4';
 
 /* ---------- stałe i drobne pomocniki ---------- */
 var DAY = 864e5, HOUR = 36e5, MIN = 6e4;
@@ -543,15 +565,23 @@ function prevOcc(getTs, from) {
   for (var y = y0; y >= y0 - 40 && y >= 1000; y--) { var t = getTs(y); if (t != null && t < from) return { y: y, ts: t }; }
   return null;
 }
+function wdBars(counts) {
+  var order = [1, 2, 3, 4, 5, 6, 0], lab = ['pn', 'wt', 'śr', 'cz', 'pt', 'so', 'nd'], mx = Math.max.apply(null, counts) || 1;
+  return '<div class="wdbars">' + order.map(function (w, i) {
+    return '<div><span>' + counts[w] + '</span><i style="height:' + Math.max(2, Math.round(counts[w] / mx * 40)) + 'px"></i><span>' + lab[i] + '</span></div>';
+  }).join('') + '</div>';
+}
 function buildSpecial(v, out) {
   var mov = null;
   var c = el('div', 'card');
   c.innerHTML = '<div class="card-h"><span>Data (bez roku)</span></div><div class="row">' +
     nfld('sd', 'Dzień', 'DD', 2) + nfld('sm', 'Miesiąc', 'MM', 2) + '<div class="f w2"></div></div>' +
     '<div class="pill" hidden></div>' +
-    '<details class="mt"><summary>Popularne daty (kliknij, aby wybrać)</summary><div class="chips mt8">' + chipsHtml(POP) + '</div></details>';
+    '<details class="mt" open><summary>Popularne daty (kliknij, aby wybrać)</summary><div class="chips mt8">' + chipsHtml(POP) + '</div></details>';
   var c2 = el('div', 'card');
-  c2.innerHTML = '<div class="row">' + nfld('yrs', 'Ile lat pokazać', '10', 3) + '</div><div class="mt">' + segHtml('Naprzód', 'Wstecz') + '</div>';
+  c2.innerHTML = '<div class="row">' + nfld('yrs', 'Ile lat pokazać', '10', 3) + nfld('yfrom', 'Zacznij od roku', 'od dziś', 4) + '</div>' +
+    '<div class="mt">' + segHtml('Naprzód', 'Wstecz') + '</div>' +
+    '<p class="note">Zostaw „Zacznij od roku” puste, aby liczyć od dziś. Wpisz np. 1990, żeby zobaczyć, na jaki dzień tygodnia wypadały Twoje urodziny.</p>';
   v.appendChild(c); v.appendChild(c2);
   $('.yrs', c2).value = '10';
   var pill = $('.pill', c), SD = $('.sd', c), SM = $('.sm', c);
@@ -567,19 +597,25 @@ function buildSpecial(v, out) {
     recalc();
   });
   function recalc() {
-    var getTs;
+    var getTs, leapOnly = false;
     if (mov) getTs = mov[3];
     else {
       var d = rd(c, 'sd'), m = rd(c, 'sm');
       if (!d || !m) { out.innerHTML = msg('Wpisz dzień i miesiąc (np. 7 i 5) albo wybierz datę z listy popularnych.'); return; }
       if (m < 1 || m > 12) { out.innerHTML = errm('Miesiąc musi być od 1 do 12.'); return; }
       if (d > dim(2024, m)) { out.innerHTML = errm('W tym miesiącu nie ma takiego dnia.'); return; }
+      leapOnly = d === 29 && m === 2;
       getTs = function (y) { return d > dim(y, m) ? null : utc(y, m, d); };
     }
+    var yf = rd(c2, 'yfrom');
+    if (yf && (yf < 1000 || yf > 9999)) { out.innerHTML = errm('Rok początkowy musi być w zakresie 1000–9999.'); return; }
     var t0 = todayTs(), nx = nextOcc(getTs, t0), pv = prevOcc(getTs, t0);
     if (!nx) { out.innerHTML = errm('Nie znaleziono następnej takiej daty.'); return; }
     var N = Math.min(300, Math.max(1, rd(c2, 'yrs') || 10)), dir = segVal(c2), list = [], y, t;
-    if (dir > 0) { for (y = nx.y; list.length < N && y <= 9999; y++) { t = getTs(y); if (t != null) list.push(t); } }
+    if (yf) {
+      if (dir > 0) { for (y = yf; list.length < N && y <= 9999; y++) { t = getTs(y); if (t != null) list.push(t); } }
+      else { for (y = yf; list.length < N && y >= 1000; y--) { t = getTs(y); if (t != null) list.push(t); } }
+    } else if (dir > 0) { for (y = nx.y; list.length < N && y <= 9999; y++) { t = getTs(y); if (t != null) list.push(t); } }
     else if (pv) { for (y = pv.y; list.length < N && y >= 1000; y--) { t = getTs(y); if (t != null) list.push(t); } }
     var n = today(), left = nx.ts - utc(n.y, n.m, n.d, n.h, n.mi);
     var html = '<div class="big">' + (nx.ts === t0 ? 'To dzisiaj!' : rel(nx.ts)) + '</div><div class="sub">' + (mov ? mov[0] + ': ' : 'Następnie: ') + fmtDate(nx.ts) + '</div>';
@@ -590,20 +626,26 @@ function buildSpecial(v, out) {
         kv('Godziny do początku dnia', nf(left / HOUR));
     }
     if (pv) html += kv('Poprzednio', fmtDate(pv.ts) + ' (' + rel(pv.ts) + ')');
-    html += '<div class="sub-h">' + (dir > 0 ? 'Na jaki dzień tygodnia wypada w kolejnych latach:' : 'Na jaki dzień tygodnia wypadało w poprzednich latach:') + '</div>';
-    var counts = [0, 0, 0, 0, 0, 0, 0], weekend = 0;
+    html += '<div class="sub-h">' + (yf ? 'Dzień tygodnia w latach ' + (dir > 0 ? 'od ' : 'wstecz od ') + yf + ':' :
+      (dir > 0 ? 'Na jaki dzień tygodnia wypada w kolejnych latach:' : 'Na jaki dzień tygodnia wypadało w poprzednich latach:')) + '</div>';
+    var counts = [0, 0, 0, 0, 0, 0, 0], weekend = 0, rows = '', more = '', SHOW = 12;
     list.forEach(function (ts, i) {
       var p = parts(ts), we = p.wd === 0 || p.wd === 6;
       counts[p.wd]++; if (we) weekend++;
-      html += '<div class="kv' + (i === 0 ? ' cur' : '') + '"><span>' + p.y + (i === 0 ? (dir > 0 ? ' · najbliższa' : ' · ostatnia') : '') +
+      var cur = !yf && i === 0;
+      var row = '<div class="kv' + (cur ? ' cur' : '') + '"><span>' + p.y + (cur ? (dir > 0 ? ' · najbliższa' : ' · ostatnia') : '') +
         '</span><b' + (we ? ' class="we"' : '') + '>' + (mov ? p.d + ' ' + MON[p.m - 1] + ', ' + WD[p.wd] : WD[p.wd]) + '</b></div>';
+      if (i < SHOW) rows += row; else more += row;
     });
+    html += rows;
+    if (more) html += '<details><summary>Pokaż pozostałe (' + (list.length - SHOW) + ')</summary>' + more + '</details>';
     if (list.length > 1 && !mov) {
       var mx = Math.max.apply(null, counts), top = [];
       counts.forEach(function (k, i) { if (k === mx) top.push(WDW[i]); });
-      html += '<div class="note">Najczęściej wypada ' + joinPl(top) + ' (' + mx + '×). W weekend: ' + weekend + ' z ' + list.length + ' lat.</div>';
+      html += '<div class="sub-h">Rozkład dni tygodnia (' + list.length + ' lat)</div>' + wdBars(counts) +
+        '<div class="note">Najczęściej wypada ' + joinPl(top) + ' (' + mx + '×). W weekend: ' + weekend + ' z ' + list.length + '.</div>';
     }
-    if (!mov && list.length < N) html += '<div class="note">Ta data występuje tylko w niektórych latach (np. 29 lutego w latach przestępnych).</div>';
+    if (leapOnly) html += '<div class="note">29 lutego występuje tylko w latach przestępnych, więc lista pokazuje te lata.</div>';
     out.innerHTML = html;
   }
   return recalc;
@@ -773,6 +815,7 @@ function buildPace(v, out) {
     '<div class="sub-h">Czas</div><div class="row">' + nfld('tg', 'godz.', '0', 3) + nfld('tm', 'min', '0', 3) + nfld('ts', 'sek', '0', 3) + '</div>' +
     '<div class="sub-h">Tempo (czas na 1 km)</div><div class="row">' + nfld('pm', 'min', '0', 3) + nfld('ps', 'sek', '0', 2) + '<div class="f"></div></div>' +
     '<div class="sub-h">Prędkość</div><div class="row">' + nfld('pv', 'km/h', '0', 6, true) + '<div class="f"></div></div>' +
+    '<div class="sub-h">Dodatkowo</div><div class="row">' + lblSel('Międzyczasy co', selHtml('spl', [[0, 'wyłączone'], [1, '1 km'], [5, '5 km'], [10, '10 km'], [25, '25 km']], false, 0)) + '<div class="f"></div></div>' +
     '<div class="mt"><button class="btn clr">Wyczyść wszystko</button></div>';
   v.appendChild(c);
   c.addEventListener('click', function (e) {
@@ -812,6 +855,13 @@ function buildPace(v, out) {
       kv('Prędkość w milach', nf(V / MILE, 2) + ' mph') +
       '<div class="sub-h">Z takim tempem przejedziesz / przebiegniesz:</div>' +
       STD.map(function (s) { return kv(s[0], hms(s[1] / V * 3600)); }).join('');
+    var sp = +$('.spl', c).value;
+    if (sp > 0) {
+      var rows = '', k, last = Math.min(60, Math.floor(D / sp + 1e-9));
+      for (k = 1; k <= last; k++) rows += kv(nf(k * sp) + ' km', hms(k * sp / V * 3600));
+      if (D - last * sp > 1e-6) rows += kv(nf(D, 2) + ' km (meta)', hms(T));
+      if (rows) html += '<div class="sub-h">Międzyczasy co ' + sp + ' km (łącznie od startu)</div>' + rows;
+    }
     if (notes.length) html += '<div class="note">' + notes.join(' ') + '</div>';
     out.innerHTML = html;
   }
@@ -845,6 +895,144 @@ function buildConv(v, out) {
 }
 
 /* =====================================================
+   TRYB: info o dacie
+   ===================================================== */
+function buildInfo(v, out) {
+  var f = dateField('Data', { today: true, todayLabel: 'Dziś' }); v.appendChild(f.root);
+  function recalc() {
+    var s = f.read();
+    if (s.st === 'incomplete') { out.innerHTML = msg('Wpisz dowolną datę albo zaznacz „Dziś”.'); return; }
+    if (s.st === 'invalid') { out.innerHTML = errm(s.err); return; }
+    var ts = s.ts, p = parts(ts), L = leap(p.y), tot = L ? 366 : 365, doy = dayOfYear(ts);
+    var hol = holidays(p.y).map[ts / DAY];
+    var k = Math.ceil(p.d / 7), isLast = p.d + 7 > dim(p.y, p.m);
+    var d = new Date(ts); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    var iy = d.getUTCFullYear(), nl = p.y; do { nl++; } while (!leap(nl));
+    var html = '<div class="big">' + fmtDate(ts) + '</div><div class="sub">' + rel(ts) + '</div>' +
+      '<div class="kv"><span>Dzień tygodnia</span><b' + ((p.wd === 0 || p.wd === 6) ? ' class="we"' : '') + '>' + WD[p.wd] + '</b></div>' +
+      kv('Tydzień roku (ISO)', isoWeek(ts) + (iy !== p.y ? ' (tygodniowy rok ' + iy + ')' : '')) +
+      kv('Dzień roku', doy + ' z ' + tot) +
+      kv('Do końca roku', cnt(tot - doy, 'dzien')) +
+      kv('Kwartał', Math.ceil(p.m / 3) + '. (' + MONN[Math.floor((p.m - 1) / 3) * 3] + '–' + MONN[Math.floor((p.m - 1) / 3) * 3 + 2] + ')') +
+      kv('Który w miesiącu', k + '. ' + WD[p.wd] + (isLast ? ' (ostatni w miesiącu)' : '')) +
+      kv('Dni w miesiącu', dim(p.y, p.m)) +
+      kv('Rok ' + p.y, L ? 'przestępny (366 dni)' : 'zwykły (365 dni)') +
+      kv(L ? 'Następny rok przestępny' : 'Najbliższy rok przestępny', nl);
+    if (hol) html += kv('Święto', hol);
+    out.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
+   TRYB: odliczanie (zapisane wydarzenia) + wspólne funkcje
+   ===================================================== */
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function cdLoad() {
+  var a = []; try { a = JSON.parse(lsGet('kt-cd') || '[]'); } catch (e) {}
+  if (!Array.isArray(a)) return [];
+  return a.filter(function (x) {
+    return x && typeof x.n === 'string' && x.y >= 1000 && x.y <= 9999 && x.m >= 1 && x.m <= 12 && x.d >= 1 && x.d <= dim(x.y, x.m);
+  });
+}
+function cdSave(a) { lsSet('kt-cd', JSON.stringify(a)); }
+function cdItems(list) {
+  var t0 = todayTs();
+  var items = list.map(function (x) {
+    var ts;
+    if (x.r) {
+      var o = nextOcc(function (y) { return x.d > dim(y, x.m) ? null : utc(y, x.m, x.d); }, t0);
+      ts = o ? o.ts : utc(x.y, x.m, x.d);
+    } else ts = utc(x.y, x.m, x.d);
+    return { x: x, ts: ts, dd: Math.round((ts - t0) / DAY) };
+  });
+  items.sort(function (a, b) { return ((a.dd < 0) - (b.dd < 0)) || (a.dd < 0 ? b.dd - a.dd : a.dd - b.dd); });
+  return items;
+}
+function buildCountdown(v) {
+  var c1 = el('div', 'card');
+  c1.innerHTML = '<label class="f"><span>Nazwa wydarzenia</span><input type="text" class="txt cname" maxlength="40" placeholder="np. Urlop, Wyścig, Urodziny Ani" autocomplete="off"></label>';
+  var f = dateField('Data wydarzenia', { noToday: true });
+  var c2 = el('div', 'card');
+  c2.innerHTML = chkHtml('yearly', 'Powtarzaj co roku (urodziny, rocznice)') +
+    '<div class="mt"><button class="btn pri add">+ Dodaj odliczanie</button></div>';
+  var listBox = el('div', 'card');
+  v.appendChild(c1); v.appendChild(f.root); v.appendChild(c2); v.appendChild(listBox);
+  $('.add', c2).addEventListener('click', function () {
+    var name = $('.cname', c1).value.trim(), s = f.read();
+    if (!name) { toast('Wpisz nazwę wydarzenia'); return; }
+    if (s.st === 'incomplete') { toast('Uzupełnij datę wydarzenia'); return; }
+    if (s.st === 'invalid') { toast(s.err); return; }
+    var a = cdLoad();
+    if (a.length >= 30) { toast('Maksymalnie 30 odliczań'); return; }
+    a.push({ id: Date.now() + '' + Math.floor(Math.random() * 1000), n: name, y: s.y, m: s.m, d: s.d, r: $('.yearly', c2).checked });
+    cdSave(a);
+    $('.cname', c1).value = ''; f.set({ t: false, d: '', m: '', y: '', h: '', i: '' }); $('.yearly', c2).checked = false;
+    toast('Dodano'); render();
+  });
+  listBox.addEventListener('click', function (e) {
+    var b = e.target.closest('.xbtn'); if (!b) return;
+    cdSave(cdLoad().filter(function (x) { return x.id !== b.dataset.id; })); render();
+  });
+  function render() {
+    var items = cdItems(cdLoad());
+    if (!items.length) { listBox.innerHTML = '<div class="card-h"><span>Twoje odliczania</span></div>' + msg('Nic tu jeszcze nie ma. Dodaj pierwsze wydarzenie powyżej: zapisze się w tym telefonie.'); return; }
+    listBox.innerHTML = '<div class="card-h"><span>Twoje odliczania</span></div>' + items.map(function (it) {
+      var yrs = it.x.r ? parts(it.ts).y - it.x.y : 0;
+      return '<div class="cdrow"><div class="nm"><b>' + esc(it.x.n) + '</b><span>' + fmtDate(ts0(it)) + (yrs > 0 ? ' · ' + yrs + '. rocznica' : '') + '</span></div>' +
+        '<div class="days' + (it.dd < 0 ? ' past' : '') + '">' + rel(it.ts) + (Math.abs(it.dd) >= 40 ? '<small>' + relLong(it.ts) + '</small>' : '') + '</div>' +
+        '<button class="xbtn" data-id="' + it.x.id + '" aria-label="Usuń">×</button></div>';
+    }).join('');
+  }
+  function ts0(it) { return it.ts; }
+  return render;
+}
+
+/* =====================================================
+   EKRAN START: dzisiaj + skróty
+   ===================================================== */
+function nextHoliday(t0) {
+  var idx = t0 / DAY, y0 = parts(t0).y;
+  for (var y = y0; y <= y0 + 1; y++) {
+    var best = null;
+    holidays(y).list.forEach(function (h) { if (h[0] >= idx && (!best || h[0] < best[0])) best = h; });
+    if (best) return { ts: best[0] * DAY, name: best[1] };
+  }
+  return null;
+}
+function nextFri13(t0) {
+  var p = parts(t0), y = p.y, m = p.m;
+  for (var i = 0; i < 40; i++) {
+    var ts = utc(y, m, 13);
+    if (ts >= t0 && parts(ts).wd === 5) return ts;
+    if (++m > 12) { m = 1; y++; }
+  }
+  return null;
+}
+function buildHome(v) {
+  var box = el('div'); v.appendChild(box);
+  box.addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (b) show(b.dataset.go); });
+  function recalc() {
+    var t0 = todayTs(), p = parts(t0), tot = leap(p.y) ? 366 : 365, doy = dayOfYear(t0);
+    var nh = nextHoliday(t0), f13 = nextFri13(t0), cd = cdItems(cdLoad()).filter(function (i) { return i.dd >= 0; }).slice(0, 3);
+    var html = '<div class="res"><div class="big">' + fmtDate(t0) + '</div>' +
+      '<div class="sub">Tydzień ' + isoWeek(t0) + ' · dzień ' + doy + ' z ' + tot + '</div>' +
+      '<div class="bar"><i style="width:' + (doy / tot * 100).toFixed(1) + '%"></i></div>' +
+      '<div class="sub">Rok ' + p.y + ' minął w ' + nf(doy / tot * 100) + '%</div>' +
+      kv('Do końca roku', cnt(tot - doy, 'dzien'));
+    if (nh) html += kv('Najbliższe święto', nh.name + ' · ' + rel(nh.ts));
+    if (f13) html += kv('Najbliższy piątek 13.', fmtShort(f13) + ' · ' + rel(f13));
+    cd.forEach(function (i) { html += kv(esc(i.x.n), rel(i.ts)); });
+    html += '</div><div class="sub-h">Co chcesz policzyć?</div><div class="tiles">' +
+      modes.concat([settingsMode]).filter(function (m) { return m.id !== 'home'; }).map(function (m) {
+        return '<button class="tile" data-go="' + m.id + '"><span class="ic">' + m.icon + '</span><b>' + m.name + '</b><small>' + m.s + '</small></button>';
+      }).join('') + '</div>';
+    box.innerHTML = html;
+  }
+  return recalc;
+}
+
+/* =====================================================
    USTAWIENIA: kolor akcentu
    ===================================================== */
 var ACCENTS = [['#ff9f0a', 'Pomarańczowy'], ['#0a84ff', 'Niebieski'], ['#30d158', 'Zielony'], ['#40c8e0', 'Turkusowy'],
@@ -857,19 +1045,27 @@ function applyAccent(hex) {
   st.setProperty('--onacc', lum > 0.6 ? '#000' : '#fff');
   st.setProperty('--accsoft', 'rgba(' + r + ',' + g + ',' + b + ',.18)');
 }
+var ZOOMS = [['1', 'Normalny'], ['1.12', 'Większy'], ['1.25', 'Duży']];
+function applyZoom(z) { document.documentElement.style.setProperty('--zoom', z); }
 function buildSettings(v) {
   var cur = (lsGet('kt-acc') || DEF_ACC).toLowerCase();
+  var z = lsGet('kt-zoom') || '1', sp = lsGet('kt-start') || 'home';
   var c = el('div', 'card');
   c.innerHTML = '<div class="card-h"><span>Kolor akcentu</span></div><div class="sw">' +
     ACCENTS.map(function (a) { return '<button class="swc" data-c="' + a[0] + '" style="background:' + a[0] + '" aria-label="' + a[1] + '" aria-pressed="' + (a[0] === cur) + '"></button>'; }).join('') +
     '</div><div class="row mt" style="align-items:center;justify-content:space-between"><label class="chk"><span>Własny kolor</span>' +
     '<input type="color" class="cust" value="' + cur + '"></label><button class="btn rst">Przywróć domyślny</button></div>' +
-    '<p class="note">Kolor zapisuje się w tym telefonie i jest używany w całej aplikacji.</p>';
+    '<p class="note">Kolor zapisuje się w tym telefonie i jest używany w całej aplikacji. Jasny lub ciemny motyw dobiera się sam, zgodnie z ustawieniem telefonu.</p>';
+  var c3 = el('div', 'card');
+  c3.innerHTML = '<div class="card-h"><span>Rozmiar tekstu</span></div><div class="seg">' +
+    ZOOMS.map(function (a) { return '<button data-z="' + a[0] + '" aria-pressed="' + (a[0] === z) + '">' + a[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="card-h mt"><span>Po otwarciu aplikacji pokaż</span></div><div class="seg">' +
+    [['home', 'Ekran Start'], ['last', 'Ostatnio użyty']].map(function (a) { return '<button data-s="' + a[0] + '" aria-pressed="' + (a[0] === sp) + '">' + a[1] + '</button>'; }).join('') + '</div>';
   var c2 = el('div', 'card');
   c2.innerHTML = '<div class="card-h"><span>O aplikacji</span></div>' + kv('Wersja', APP_VERSION) +
     kv('Działanie offline', 'tak, po zainstalowaniu') + kv('Dane', 'zostają w tym telefonie') +
-    '<div class="mt"><button class="btn clr">Wyczyść zapisane ustawienia</button></div>';
-  v.appendChild(c); v.appendChild(c2);
+    '<div class="opts mt"><button class="btn cd">Usuń zapisane odliczania</button><button class="btn clr">Przywróć ustawienia domyślne</button></div>';
+  v.appendChild(c); v.appendChild(c3); v.appendChild(c2);
   function mark(hex) {
     c.querySelectorAll('.swc').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.c === hex); });
     $('.cust', c).value = hex;
@@ -880,10 +1076,20 @@ function buildSettings(v) {
     if (e.target.closest('.rst')) pick(DEF_ACC);
   });
   $('.cust', c).addEventListener('input', function (e) { var h = e.target.value.toLowerCase(); applyAccent(h); lsSet('kt-acc', h); mark(h); });
+  c3.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-z]');
+    if (b) { applyZoom(b.dataset.z); lsSet('kt-zoom', b.dataset.z); return; }
+    b = e.target.closest('[data-s]');
+    if (b) lsSet('kt-start', b.dataset.s);
+  });
   c2.addEventListener('click', function (e) {
+    if (e.target.closest('.cd')) {
+      if (confirm('Usunąć wszystkie zapisane odliczania?')) { cdSave([]); toast('Usunięto odliczania'); }
+      return;
+    }
     if (!e.target.closest('.clr')) return;
-    try { localStorage.removeItem('kt-acc'); localStorage.removeItem('kt-tab'); } catch (x) {}
-    pick(DEF_ACC); toast('Przywrócono ustawienia domyślne');
+    try { ['kt-acc', 'kt-tab', 'kt-start', 'kt-zoom'].forEach(function (k) { localStorage.removeItem(k); }); } catch (x) {}
+    applyAccent(DEF_ACC); applyZoom(1); toast('Przywrócono ustawienia domyślne'); show('settings');
   });
   return function () {};
 }
@@ -892,17 +1098,20 @@ function buildSettings(v) {
    POWŁOKA: menu boczne, tytuł, kopiowanie, start
    ===================================================== */
 var modes = [
-  { id: 'add', g: 'Daty', icon: '➕', name: 'Dodaj / odejmij', hint: 'Wybierz datę i dodaj lub odejmij czas: od minut po lata.', build: buildAdd },
-  { id: 'diff', g: 'Daty', icon: '↔️', name: 'Różnica dat', hint: 'Policz, ile czasu dzieli dwie daty (lata, dni, godziny, dni robocze).', build: buildDiff },
-  { id: 'work', g: 'Daty', icon: '💼', name: 'Dni robocze', hint: 'Dodaj lub odejmij dni robocze, z pominięciem weekendów i świąt.', build: buildWork },
-  { id: 'age', g: 'Daty', icon: '🎂', name: 'Wiek i rocznice', hint: 'Ile masz lat i kiedy następne urodziny. Działa też dla dowolnej rocznicy.', build: buildAge },
-  { id: 'special', g: 'Specjalne daty', icon: '⭐', name: 'Następna taka data', hint: 'Wpisz datę (np. 7.05) i zobacz, kiedy będzie następna oraz jaki to dzień tygodnia w kolejnych latach.', build: buildSpecial },
-  { id: 'find', g: 'Specjalne daty', icon: '🔎', name: 'Szukaj daty', hint: 'Znajdź przyszłe daty, np. każdy piątek 13. albo ostatnią niedzielę marca.', build: buildFind },
-  { id: 'sum', g: 'Czas i ruch', icon: '⏱️', name: 'Sumator czasu', hint: 'Zsumuj lub odejmij czasy trwania, np. godziny pracy czy długość nagrań.', build: buildSum },
-  { id: 'pace', g: 'Czas i ruch', icon: '🚴', name: 'Tempo i prędkość', hint: 'Dystans, czas, tempo, prędkość: podaj dowolne dwie wartości, a resztę policzę.', build: buildPace },
-  { id: 'conv', g: 'Czas i ruch', icon: '🔄', name: 'Konwerter jednostek', hint: 'Przelicz sekundy, minuty, godziny, dni, tygodnie, miesiące i lata.', build: buildConv }
+  { id: 'home', g: 'Start', icon: '🏠', name: 'Start', s: 'Dzisiaj i skróty', hint: 'Wybierz, co chcesz policzyć. Menu ☰ z wszystkimi funkcjami jest po lewej (możesz je też przesunąć palcem od lewej krawędzi).', build: buildHome, noRes: true },
+  { id: 'add', g: 'Daty', icon: '➕', name: 'Dodaj / odejmij', s: 'Jaka data będzie za…', hint: 'Wybierz datę i dodaj lub odejmij czas: od minut po lata.', build: buildAdd },
+  { id: 'diff', g: 'Daty', icon: '↔️', name: 'Różnica dat', s: 'Ile czasu dzieli dwie daty', hint: 'Policz, ile czasu dzieli dwie daty (lata, dni, godziny, dni robocze).', build: buildDiff },
+  { id: 'work', g: 'Daty', icon: '💼', name: 'Dni robocze', s: 'Bez weekendów i świąt', hint: 'Dodaj lub odejmij dni robocze, z pominięciem weekendów i świąt.', build: buildWork },
+  { id: 'age', g: 'Daty', icon: '🎂', name: 'Wiek i rocznice', s: 'Ile lat i kiedy urodziny', hint: 'Ile masz lat i kiedy następne urodziny. Działa też dla dowolnej rocznicy.', build: buildAge },
+  { id: 'special', g: 'Specjalne daty', icon: '⭐', name: 'Następna taka data', s: 'Kiedy znowu i w jaki dzień', hint: 'Wpisz datę (np. 7.05) i zobacz, kiedy będzie następna oraz jaki to dzień tygodnia w kolejnych latach.', build: buildSpecial },
+  { id: 'info', g: 'Specjalne daty', icon: '📅', name: 'Info o dacie', s: 'Dzień tygodnia, tydzień, rok przestępny', hint: 'Wpisz dowolną datę: dzień tygodnia, numer tygodnia, dzień roku, rok przestępny i więcej.', build: buildInfo },
+  { id: 'find', g: 'Specjalne daty', icon: '🔎', name: 'Szukaj daty', s: 'Piątek 13., n-ty poniedziałek', hint: 'Znajdź przyszłe daty, np. każdy piątek 13. albo ostatnią niedzielę marca.', build: buildFind },
+  { id: 'cd', g: 'Specjalne daty', icon: '⏳', name: 'Odliczanie', s: 'Własne wydarzenia', hint: 'Zapisz ważne wydarzenia i patrz, ile dni zostało. Zapisują się w tym telefonie.', build: buildCountdown, noRes: true },
+  { id: 'sum', g: 'Czas i ruch', icon: '⏱️', name: 'Sumator czasu', s: 'Dodawanie czasów trwania', hint: 'Zsumuj lub odejmij czasy trwania, np. godziny pracy czy długość nagrań.', build: buildSum },
+  { id: 'pace', g: 'Czas i ruch', icon: '🚴', name: 'Tempo i prędkość', s: 'Dystans, czas, km/h', hint: 'Dystans, czas, tempo, prędkość: podaj dowolne dwie wartości, a resztę policzę.', build: buildPace },
+  { id: 'conv', g: 'Czas i ruch', icon: '🔄', name: 'Konwerter jednostek', s: 'Minuty, dni, lata…', hint: 'Przelicz sekundy, minuty, godziny, dni, tygodnie, miesiące i lata.', build: buildConv }
 ];
-var settingsMode = { id: 'settings', icon: '⚙️', name: 'Ustawienia', hint: 'Dostosuj wygląd aplikacji.', build: buildSettings, noRes: true };
+var settingsMode = { id: 'settings', icon: '⚙️', name: 'Ustawienia', s: 'Kolor akcentu i wygląd', hint: 'Dostosuj wygląd aplikacji.', build: buildSettings, noRes: true };
 
 var view = $('#view'), out = $('#out'), titleEl = $('#title'), hintEl = $('#hint'), resbar = $('#resbar'), foot = $('#foot');
 var drawerOpen = false, recalcCur = function () {}, curId = null;
@@ -921,7 +1130,7 @@ function show(id) {
   out.hidden = !!m.noRes; foot.hidden = !!m.noRes; resbar.hidden = true;
   recalcCur = m.build(view, out);
   recalcCur();
-  lsSet('kt-tab', m.id);
+  if (m.id !== 'settings') lsSet('kt-tab', m.id);
   window.scrollTo(0, 0);
 }
 
@@ -940,6 +1149,15 @@ window.addEventListener('popstate', function () { if (drawerOpen) closeDrawer(tr
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 $('#burger').addEventListener('click', function () { drawerOpen ? closeDrawer() : openDrawer(); });
 $('#scrim').addEventListener('click', function () { closeDrawer(); });
+/* gesty: przesunięcie od lewej krawędzi otwiera menu, przesunięcie w lewo je zamyka */
+var tx0 = null, ty0 = null;
+document.addEventListener('touchstart', function (e) { var t = e.touches[0]; tx0 = t.clientX; ty0 = t.clientY; }, { passive: true });
+document.addEventListener('touchend', function (e) {
+  if (tx0 == null) return;
+  var t = e.changedTouches[0], dx = t.clientX - tx0, dy = t.clientY - ty0, sx = tx0; tx0 = null;
+  if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+  if (!drawerOpen && sx < 28 && dx > 0) openDrawer(); else if (drawerOpen && dx < 0) closeDrawer();
+}, { passive: true });
 
 (function buildDrawerList() {
   var html = '', lastG = null;
@@ -999,7 +1217,9 @@ document.addEventListener('visibilitychange', function () { if (!document.hidden
 /* start: zapisany kolor i ostatnio używana zakładka */
 var savedAcc = lsGet('kt-acc');
 if (savedAcc && /^#[0-9a-f]{6}$/i.test(savedAcc)) applyAccent(savedAcc);
-show(lsGet('kt-tab') || modes[0].id);
+var szoom = lsGet('kt-zoom');
+if (szoom === '1.12' || szoom === '1.25') applyZoom(szoom);
+show(lsGet('kt-start') === 'last' ? (lsGet('kt-tab') || 'home') : 'home');
 
 /* ---------- offline + automatyczna aktualizacja ---------- */
 if ('serviceWorker' in navigator) {
